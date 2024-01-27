@@ -1,2 +1,2 @@
-# altaircode
-ALTAIR pipeline
+# ALTAIR
+ALTAIR EEG processing pipeline

@@ -1,4 +1,4 @@
-function [epochCells,meanCells,indexPnts,sTimes,ernCodes,ernTimeStamps,ernRts]=soarEventEpochs(EEG,eventCodes,lern,winLength)
+function [epochCells,meanCells,indexPnts,sTimes,ernCodes,ernTimeStamps,ernRts]=ernEventEpochs(EEG,eventCodes,lern,preLength,winLength)
 
 %--------------------------------------------------------------------------
  % soarEventFinder.m
@@ -29,8 +29,9 @@ function [epochCells,meanCells,indexPnts,sTimes,ernCodes,ernTimeStamps,ernRts]=s
 epochCells=[];
 
 winTotal=round(EEG.srate*(winLength));
+preTotal=round(EEG.srate*(preLength));
 [chans,samples]=size(EEG.data);
-meanCells=zeros(chans,((winTotal)+1));
+meanCells=zeros(chans,(preTotal+winTotal+1));
 [indexPnts,sTimes,ernCodes,ernTimeStamps,ernRts]=soarEventFinder(EEG,eventCodes,lern);
 
 x=EEG.data;
@@ -40,11 +41,13 @@ indexPnts=indexPnts(indexFind);
 for iii=1:length(indexPnts)
 eCap=indexPnts(iii)+winTotal;
 try
-x1=x(:,indexPnts(iii):eCap);
+x1=x(:,abs(indexPnts(iii)-preTotal):eCap);
+xmeans=mean(x(:,abs(indexPnts(iii)-preTotal):indexPnts(iii))');
+x1=x1-xmeans';
 catch
-x1=zeros(chans,winTotal+1)
+x1=zeros(chans,preTotal+winTotal+1);
 end
-meanCells=meanCells+x1;
+meanCells=meanCells+x1(:,1:(preTotal+winTotal+1));
 epochCells{iii}=x1;
 end
 

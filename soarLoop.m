@@ -68,12 +68,37 @@ lern=table2cell(ern);
 llst=table2cell(lst);
 lnpu=table2cell(npu);
 
+eventCodes=[3, 4];
+[ernCorIndexPnts,corErnTimes,~,~,corErnRts]=soarEventFinder(EEG,eventCodes,lern);
 
+
+eventCodes=[10, 11];
+[ernIncIndexPnts,incErnTimes,~,~,incErnRts]=soarEventFinder(EEG,eventCodes,lern);
+
+totalErnEvents=length(ernIncIndexPnts)+length(ernCorIndexPnts);
+totalErnAccuracy=length(ernCorIndexPnts)./totalErnEvents;
+eventCodes=[3, 4, 10, 11];
 winLength=.5;
 preLength=.5;
-[totalErnAccuracy,corErnRts,incErnRts,meanEeg,meanErnEeg,meanCrnEeg,ernEpochCells,crnEpochCells,xPnts]=ernProcess(EEG,lern,preLength,winLength);
+
+[epochCells,meanCells,indexPnts,sTimes,ernCodes,ernTimeStamps,ernRts]=ernEventEpochs(EEG,eventCodes,lern,preLength,winLength);
+
+meanEeg=mean(meanCells);
+xPnts=linspace(0,round(winLength*EEG.srate),length(meanEeg));
 
 
+% error rates
+eventCodes=[10, 11];
+[ernEpochCells,ernMeanCells,~,~,~,~,~]=ernEventEpochs(EEG,eventCodes,lern,preLength,winLength);
+meanErnEeg=mean(ernMeanCells);
+
+eventCodes=[3, 4];
+[crnEpochCells,crnMeanCells,~,~,~,~,~]=ernEventEpochs(EEG,eventCodes,lern,preLength,winLength);
+meanCrnEeg=mean(crnMeanCells);
+
+% only after stimuli appears
+meanErnEeg=meanErnEeg(:,round(winLength*EEG.srate));
+meanCrnEeg=meanCrnEeg(:,round(winLength*EEG.srate));
 
 % plot figures
 figure();
@@ -107,10 +132,18 @@ clc;
 clear EEG;
 load('OSU-00002-04B-01-LST.bdf.mat')
 winLength=1;
+eventCodes=[6];
+eventCodes=[11];
+[~,meanCells,indexPnts,sTimes,ernCodes,ernTimeStamps,ernRts]=soarEventEpochs(EEG,eventCodes,llst,winLength);
+lstWin=mean(meanCells);
 
-[meanWinCells,meanLosCells,lstWin,lstLos,xPnts]=lstProcess(EEG,llst,winLength);
+eventCodes=[7];
+eventCodes=[12];
+[~,meanCells,indexPnts,sTimes,ernCodes,ernTimeStamps,ernRts]=soarEventEpochs(EEG,eventCodes,llst,winLength);
+lstLos=mean(meanCells);
 
 figure();
+xPnts=linspace(0,1,length(lstWin));
 plot(xPnts,lstWin)
 ylabel('Voltage (uV)')
 xlabel('Time (s)')

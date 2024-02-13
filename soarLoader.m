@@ -8,11 +8,16 @@ ernAcc=[];
 ernRtCor={};
 ernRtInc={};
 
+ernCorCells={};
+ernIncCells={};
+
 meanErnE=[];
 meanCrnE=[];
 
 meanWins=[];
 meanLoss=[];
+listWinCells={};
+listLosCells={};
 
 
 fName='OSU-00001-04B-01-ERN.bdf';
@@ -56,10 +61,12 @@ for ij=1:length(fileList)
                     preLength=.5;
                     [totalErnAccuracy,corErnRts,incErnRts,meanEeg,meanErnEeg,meanCrnEeg,ernEpochCells,crnEpochCells,xPnts]=ernProcess(EEG,lern,preLength,winLength);
                     ernAcc=[ernAcc; totalErnAccuracy];
-                    ernRtCor{ii}=corErnRts;
-                    ernRtInc{ii}=incErnRts;
+                    ernRtCor{ij}=corErnRts;
+                    ernRtInc{ij}=incErnRts;
                     meanErnE=[meanErnE; meanErnEeg];
                     meanCrnE=[meanCrnE; meanCrnEeg];
+                    ernCorCells{ij}=ernEpochCells;
+                    ernIncCells{ij}=crnEpochCells;
 
                 end
             end
@@ -75,6 +82,8 @@ for ij=1:length(fileList)
                 [meanWinCells,meanLosCells,lstWin,lstLos,xPnts]=lstProcess(EEG,llst,winLength);
                 meanWins=[meanWins; lstWin];
                 meanLoss=[meanLoss; lstLos];
+                listWinCells{ij}=meanWinCells;
+                listLosCells{ij}=meanLosCells;
             end
         end
 
@@ -103,9 +112,14 @@ save('ernRtIncSoar.mat','ernRtInc');
 save('meanErnESoar.mat','meanErnE');
 save('meanCrnESoar.mat','meanCrnE');
 
+save('meanErnCorSoar.mat','ernCorCells');
+save('meanErnIncSoar.mat','ernIncCells');
+
+
 save('meanLstWinsSoar.mat','meanWins');
 save('meanLstLossSoar.mat','meanLoss');
-
+save('meanLstWinCellSoar.mat','listWinCells');
+save('meanLstLosCellSoar.mat','listLosCells');
 
 end
 

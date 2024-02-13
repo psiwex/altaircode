@@ -84,8 +84,6 @@ xlabel('Time (s)')
 % endPoint=min([samples,sTimes(end)])
 % find the doors arrow stim
 % find the flanker response code
-
-
 xPnts=linspace(0,round(winLength*EEG.srate),length(meanErnEeg));
 plot(xPnts,meanErnEeg)
 ylabel('Voltage (uV)')
@@ -94,6 +92,8 @@ hold on;
 plot(xPnts,meanCrnEeg)
 legend('Error','Correct')
 hold off;
+
+
 xx=EEG.chanlocs;
 splName='STUDY_headplot.spl';
 xx = readlocs('Standard-10-10-Cap47.ced');
@@ -118,10 +118,3 @@ hold on;
 plot(xPnts,lstLos)
 legend('Win','Loss')
 hold off;
-
-splName='STUDY_headplot.spl';
-xx = readlocs('Standard-10-10-Cap47.ced');
-headplot('setup', xx, splName)
-
-figure; 
-headplot(EEG.data, splName)

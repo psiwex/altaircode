@@ -2,18 +2,18 @@ close all;
 clear; 
 clc;
 
-load('ernAccSoar.mat','ernAcc');
-load('ernRtCorSoar.mat','ernRtCor');
-load('ernRtIncSoar.mat','ernRtInc');
-load('meanErnESoar.mat','meanErnE');
-load('meanCrnESoar.mat','meanCrnE');
-load('meanErnCorSoar.mat','ernCorCells');
-load('meanErnIncSoar.mat','ernIncCells');
+load('ernAccSoarKukri.mat','ernAcc');
+load('ernRtCorSoarKukri.mat','ernRtCor');
+load('ernRtIncSoarKukri.mat','ernRtInc');
+load('meanErnESoarKukri.mat','meanErnE');
+load('meanCrnESoarKukri.mat','meanCrnE');
+load('meanErnCorSoarKukri.mat','ernCorCells');
+load('meanErnIncSoarKukri.mat','ernIncCells');
 
-load('meanLstWinsSoar.mat','meanWins');
-load('meanLstLossSoar.mat','meanLoss');
-load('meanLstWinCellSoar.mat','listWinCells');
-load('meanLstLosCellSoar.mat','listLosCells');
+load('meanLstWinsSoarKukri.mat','meanWins');
+load('meanLstLossSoarKukri.mat','meanLoss');
+load('meanLstWinCellSoarKukri.mat','listWinCells');
+load('meanLstLosCellSoarKukri.mat','listLosCells');
 
 load('OSU-00002-04B-01-ERN.bdf.mat')
 
@@ -23,7 +23,7 @@ winLength=.5;
 preLength=.5;
 chanLim=39;
 % channel fcz:
-chanSel=38;
+chanSel=34;
 
 totalLength=(EEG.srate*(preLength+winLength))+1;
 
@@ -143,14 +143,14 @@ losLstEeg=losLstEeg/length(lstInd0);
 % ern cleanup
 
 preBaseline=(EEG.srate*(preLength))+1;
-x1=conErnEeg(:,1:preBaseline);
-
-x2=incErnEeg(:,1:preBaseline);
-for aa=1:chanLim
-x1(aa,1:preBaseline)=linspace(x1(aa,1),x1(aa,end),preBaseline);
-x2(aa,1:preBaseline)=linspace(x2(aa,1),x2(aa,end),preBaseline);
-
-end
+% x1=conErnEeg(:,1:preBaseline);
+% 
+% x2=incErnEeg(:,1:preBaseline);
+% for aa=1:chanLim
+% x1(aa,1:preBaseline)=linspace(x1(aa,1),x1(aa,end),preBaseline);
+% x2(aa,1:preBaseline)=linspace(x2(aa,1),x2(aa,end),preBaseline);
+% 
+% end
 
 % x1=detrend(x1,1);
 % x2=detrend(x2,1);
@@ -158,23 +158,20 @@ end
 % x2=x2-mean(x2);
 % x1=detrend(x1,2);
 % x2=detrend(x2,2);
-
-conErnEeg(:,1:preBaseline)=x1;
-incErnEeg(:,1:preBaseline)=x2;
-crn=conErnEeg(:,preBaseline:end);
-ern=incErnEeg(:,preBaseline:end);
-
+% 
+% conErnEeg(:,1:preBaseline)=x1;
+% incErnEeg(:,1:preBaseline)=x2;
+% crn=conErnEeg(:,preBaseline:end);
+% ern=incErnEeg(:,preBaseline:end);
+% 
 % ern=detrend(ern,1);
 % crn=detrend(crn,1);
+% 
+% crn=crn/max(max(crn));
+% ern=ern/max(max(ern));
 
-crn=crn/max(max(crn));
-ern=ern/max(max(ern));
-
-
-
-
-conErnEeg(:,preBaseline:end)=crn;
-incErnEeg(:,preBaseline:end)=ern;
+% conErnEeg(:,preBaseline:end)=crn;
+% incErnEeg(:,preBaseline:end)=ern;
 
 % lst cleanup
 winLstEeg=winLstEeg-mean(winLstEeg);
@@ -183,20 +180,23 @@ losLstEeg=losLstEeg-mean(losLstEeg);
 %% figures 
 % ern
 % channel fcz is 38
-
+ern=incErnEeg(:,preBaseline:end);
 figure;
 xPnts=linspace(-round(preLength*EEG.srate),round(winLength*EEG.srate),totalLength);
-plot(xPnts,conErnEeg(chanSel,:))
+plot(xPnts,(incErnEeg(chanSel,:)))
 ylabel('Voltage (uV)')
 xlabel('Time (ms)')
 hold on;
-plot(xPnts,incErnEeg(chanSel,:))
+plot(xPnts,(conErnEeg(chanSel,:)))
 legend('Correct','Error')
 hold off;
 
 xx=EEG.chanlocs;
 splName='STUDY_headplot.spl';
 xx = readlocs('Standard-10-10-Cap47.ced');
+
+channelLocationFile = 'C:\Users\John\Documents\MATLAB\eeglab2021.1\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp';
+xx = readlocs(channelLocationFile);
 headplot('setup', xx, splName)
 
 figure; 

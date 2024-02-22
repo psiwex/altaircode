@@ -122,6 +122,10 @@ hold off;
 xx=EEG.chanlocs;
 splName='STUDY_headplot.spl';
 xx = readlocs('Standard-10-10-Cap47.ced');
+channelLocationFile = 'C:\Users\John\Documents\MATLAB\eeglab2021.1\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp';
+
+xx=readlocs(channelLocationFile);
+
 headplot('setup', xx, splName)
 
 figure; 
@@ -153,7 +157,10 @@ legend('Win','Loss')
 hold off;
 
 splName='STUDY_headplot.spl';
-xx = readlocs('Standard-10-10-Cap47.ced');
+%xx = readlocs('Standard-10-10-Cap47.ced');
+channelLocationFile = 'C:\Users\John\Documents\MATLAB\eeglab2021.1\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp';
+
+xx=readlocs(channelLocationFile);
 headplot('setup', xx, splName)
 
 figure; 

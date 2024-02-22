@@ -23,7 +23,7 @@ fName2='OSU-00001-04B-01-ERN.bdf.mat';
 load(fName2)
 fName='OSU-00001-04B-01-ERN.bdf';
 subst='.bdf';
-outEx='.mat';
+outEx='_kukri.mat';
 logEx='.log';
 ernSuf='ERN';
 lstSuf='LST';
@@ -106,21 +106,21 @@ for ij=1:length(fileList)
 end
 %chanPercent=[chanPercent; chanPer];
 
-save('ernAccSoar.mat','ernAcc');
-save('ernRtCorSoar.mat','ernRtCor');
-save('ernRtIncSoar.mat','ernRtInc');
+save('ernAccSoarKukri.mat','ernAcc');
+save('ernRtCorSoarKukri.mat','ernRtCor');
+save('ernRtIncSoarKukri.mat','ernRtInc');
 
-save('meanErnESoar.mat','meanErnE');
-save('meanCrnESoar.mat','meanCrnE');
+save('meanErnESoarKukri.mat','meanErnE');
+save('meanCrnESoarKukri.mat','meanCrnE');
 
-save('meanErnCorSoar.mat','ernCorCells');
-save('meanErnIncSoar.mat','ernIncCells');
+save('meanErnCorSoarKukri.mat','ernCorCells');
+save('meanErnIncSoarKukri.mat','ernIncCells');
 
 
-save('meanLstWinsSoar.mat','meanWins');
-save('meanLstLossSoar.mat','meanLoss');
-save('meanLstWinCellSoar.mat','listWinCells');
-save('meanLstLosCellSoar.mat','listLosCells');
+save('meanLstWinsSoarKukri.mat','meanWins');
+save('meanLstLossSoarKukri.mat','meanLoss');
+save('meanLstWinCellSoarKukri.mat','listWinCells');
+save('meanLstLosCellSoarKukri.mat','listLosCells');
 
 end
 

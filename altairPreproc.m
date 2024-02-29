@@ -227,7 +227,7 @@ close;
         'AlphanumericCleaning', 'on',...        % Replace Letters with Numbers
         'BoundaryNumeric', { -99 },...          % Boundary event marker
         'BoundaryString', { 'boundary' },...    % Boundary string marker
-        'Eventlist', ['Raw_EventList_ern.txt']);
+        'Eventlist', 'raw');
 
 	% 16. Separate the trials into Bins by loading your BinLister file
 	% 	See: https://socialsci.libretexts.org/Bookshelves/Psychology/Book%3A_Applied_Event-Related_Potential_Data_Analysis_(Luck)/02%3A_Processing_the_Data_from_One_Participant_in_the_ERP_CORE_N400_Experiment/2.06%3A_Exercise-_Assigning_Events_to_Bins_with_BINLISTER
@@ -300,7 +300,7 @@ close;
 ERP = pop_averager(EEG, 'Criterion', 'all');
 
 x=ERP.bindata;
-x=mean(x,3);
+%x=mean(x,3);
 EEG.data=x;
 
 

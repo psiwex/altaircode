@@ -2,8 +2,8 @@ clear;
 clc;
 tic;
 
-bnds=[.1,40];
-
+bnds=[.1,30];
+chanLim=48;
 ernAcc=[];
 ernRtCor={};
 ernRtInc={};
@@ -18,8 +18,13 @@ meanWins=[];
 meanLoss=[];
 listWinCells={};
 listLosCells={};
+EEG.srate=256;
+ern1=zeros(chanLim,round(EEG.srate*1.5));
+ern2=zeros(chanLim,round(EEG.srate*1.5));
+ern3=zeros(chanLim,round(EEG.srate*1.5));
+ern4=zeros(chanLim,round(EEG.srate*1.5));
 
-fName2='OSU-00001-04B-01-ERN.bdf.mat';
+fName2='OSU-00001-04B-01-ERN.bdf_kukri.mat';
 load(fName2)
 fName='OSU-00001-04B-01-ERN.bdf';
 subst='.bdf';
@@ -54,73 +59,32 @@ for ij=1:length(fileList)
             if (tf1 == true)
                 try
    
-                    f2=strcat(prefixs,logEx);
-                    f2 = strrep(f2,'Actiview','Behavioral');
-                    ern = readtable(f2,'NumHeaderLines',5,ReadRowNames=true);
-                    lern=table2cell(ern);
-                    winLength=.5;
-                    preLength=.5;
-                    [totalErnAccuracy,corErnRts,incErnRts,meanEeg,meanErnEeg,meanCrnEeg,ernEpochCells,crnEpochCells,xPnts]=ernProcess(EEG,lern,preLength,winLength);
-                    ernAcc=[ernAcc; totalErnAccuracy];
-                    ernRtCor{ij}=corErnRts;
-                    ernRtInc{ij}=incErnRts;
-                    meanErnE=[meanErnE; meanErnEeg];
-                    meanCrnE=[meanCrnE; meanCrnEeg];
-                    ernCorCells{ij}=ernEpochCells;
-                    ernIncCells{ij}=crnEpochCells;
+
+                    x=EEG.data;
+                    x1=squeeze(x(1:chanLim,:,1));
+                    x2=squeeze(x(1:chanLim,:,2));
+                    x3=squeeze(x(1:chanLim,:,3));
+                    x4=squeeze(x(1:chanLim,:,4));
+                    ern1=.5*([ern1+x1]);
+                    ern2=.5*([ern2+x2]);
+                    ern3=.5*([ern3+x3]);
+                    ern4=.5*([ern4+x4]);
+
 
                 end
             end
 
-        tf2 = endsWith(prefixs,lstSuf);
-        if (tf2 == true)
-            try
-                f3=strcat(prefixs,logEx);
-                f3 = strrep(f3,'Actiview','Behavioral');
-                lst = readtable(f3,'NumHeaderLines',5,ReadRowNames=true);
-                llst=table2cell(lst);
-                winLength=1;
-                [meanWinCells,meanLosCells,lstWin,lstLos,xPnts]=lstProcess(EEG,llst,winLength);
-                meanWins=[meanWins; lstWin];
-                meanLoss=[meanLoss; lstLos];
-                listWinCells{ij}=meanWinCells;
-                listLosCells{ij}=meanLosCells;
-            end
-        end
 
-        tf3 = endsWith(prefixs,npuSuf);
-        if (tf3 == true)
-            try
-                f4=strcat(prefixs,logEx);
-                f4 = strrep(f4,'Actiview','Behavioral');
-                npu = readtable(f4,'NumHeaderLines',7,ReadRowNames=true);
-                lnpu=table2cell(npu);
-                winLength=.5;
-                preLength=.5;
-                [xPnts]=ernProcess(EEG,lnpu,preLength,winLength);
-            end
-        end
 
 
     
 end
 %chanPercent=[chanPercent; chanPer];
 
-save('ernAccSoarKukri.mat','ernAcc');
-save('ernRtCorSoarKukri.mat','ernRtCor');
-save('ernRtIncSoarKukri.mat','ernRtInc');
-
-save('meanErnESoarKukri.mat','meanErnE');
-save('meanCrnESoarKukri.mat','meanCrnE');
-
-save('meanErnCorSoarKukri.mat','ernCorCells');
-save('meanErnIncSoarKukri.mat','ernIncCells');
-
-
-save('meanLstWinsSoarKukri.mat','meanWins');
-save('meanLstLossSoarKukri.mat','meanLoss');
-save('meanLstWinCellSoarKukri.mat','listWinCells');
-save('meanLstLosCellSoarKukri.mat','listLosCells');
+save('ernM1.mat','ern1');
+save('ernM2.mat','ern2');
+save('ernM3.mat','ern3');
+save('ernM4.mat','ern4');
 
 end
 

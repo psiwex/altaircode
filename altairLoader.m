@@ -11,6 +11,11 @@ ernRtInc={};
 ernCorCells={};
 ernIncCells={};
 
+epochAccepted=[];
+epochRejected=[];
+
+
+
 meanErnE=[];
 meanCrnE=[];
 
@@ -28,7 +33,7 @@ fName2='OSU-00001-04B-01-ERN.bdf_kukri.mat';
 load(fName2)
 fName='OSU-00001-04B-01-ERN.bdf';
 subst='.bdf';
-outEx='_kukri.mat';
+outEx='_kukri_ern.mat';
 logEx='.log';
 ernSuf='ERN';
 lstSuf='LST';
@@ -70,6 +75,12 @@ for ij=1:length(fileList)
                     ern3=.5*([ern3+x3]);
                     ern4=.5*([ern4+x4]);
 
+                    y1=EEG.ntrials.accepted;
+                    epochAccepted=[epochAccepted; y1];
+
+                    y2=EEG.ntrials.rejected;
+                    epochRejected=[epochRejected; y2];
+
 
                 end
             end
@@ -85,6 +96,9 @@ save('ernM1.mat','ern1');
 save('ernM2.mat','ern2');
 save('ernM3.mat','ern3');
 save('ernM4.mat','ern4');
+
+save('epochAccepted.mat','epochAccepted');
+save('epochRejected.mat','epochRejected');
 
 end
 

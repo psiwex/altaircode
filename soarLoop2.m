@@ -2,12 +2,12 @@ clear;
 clc;
 tic;
 
-bnds=[.1,40];
+bnds=[.1,30];
 chanPercent=[];
 
 fName='OSU-00001-04B-01-ERN.bdf';
 subst='.bdf';
-outEx='_kukri_ern.mat';
+outEx='.mat';
 dirName = 'C:\Users\John\Documents\MATLAB\soarData\';
 [sub] = subdir(dirName);
 
@@ -24,13 +24,12 @@ if tf ~= (0)
  EEG = pop_biosig(fName);
    % [EEG, command] = pop_readbdf(fName); 
 %snr0 = snrCompare(EEG.data,bnds,EEG.srate);
-EEG = altairPreproc(EEG); 
-
-outName=append(fName,outEx);
+%EEG = altairPreproc(EEG); 
+EEG = soarPreproc(EEG,bnds);
+outName=append(fName,outEx)
 save(outName,'EEG')
 load(outName,'EEG')
 EEG = eeg_checkset(EEG); clc;
-save(outName,'EEG')
     catch
 %chanPer=1;
     end

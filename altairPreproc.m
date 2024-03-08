@@ -302,7 +302,9 @@ ERP = pop_averager(EEG, 'Criterion', 'all');
 x=ERP.bindata;
 %x=mean(x,3);
 EEG.data=x;
-
+[~,~,z]=size(EEG.data);
+EEG.ntrials=ERP.ntrials;
+EEG.trials=z;
 
 
 end

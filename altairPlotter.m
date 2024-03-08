@@ -46,18 +46,25 @@ totalLength=(EEG.srate*(preLength+winLength))+1;
 corRtErn=0;
 incRtErn=0;
 
+lwrBnd=round(preLength*EEG.srate);
+searchBnd=round(1.1*EEG.srate);
+
+means=mean(ern4(:,lwrBnd:searchBnd),2);
+maxs=max(abs(ern4(:,lwrBnd:searchBnd))')';
+stds=std(ern4(:,lwrBnd:searchBnd)')';
+
 %% figures 
 % ern
 % channel fcz is 38
 ern=ern1(chanSel,:);
 crn=ern2(chanSel,:);
 figure;
-xPnts=linspace(-round(preLength),round(winLength),length(ern));
-plot(xPnts,crn)
+xPnts=linspace(-(preLength),(winLength),length(ern));
+plot(xPnts,detrend(crn))
 ylabel('Voltage (uV)')
 xlabel('Time (ms)')
 hold on;
-plot(xPnts,ern)
+plot(xPnts,detrend(ern))
 legend('Correct','Error')
 hold off;
 
@@ -71,7 +78,7 @@ headplot('setup', xx, splName)
 
 figure; 
 %headplot(EEG.data, splName)
-headplot(ern1, splName)
+headplot(ern1(:,lwrBnd:searchBnd), splName)
 
 
 % ern
@@ -79,7 +86,7 @@ headplot(ern1, splName)
 ern=ern3(chanSel,:);
 crn=ern4(chanSel,:);
 figure;
-xPnts=linspace(-round(preLength),round(winLength),length(ern));
+xPnts=linspace(-(preLength),(winLength),length(ern));
 plot(xPnts,crn)
 ylabel('Voltage (uV)')
 xlabel('Time (ms)')
@@ -87,3 +94,17 @@ hold on;
 plot(xPnts,ern)
 legend('Congruent','Incongruent')
 hold off;
+
+
+ern=ern1(chanSel,(round(preLength*EEG.srate):end));
+crn=ern2(chanSel,(round(preLength*EEG.srate):end));
+figure;
+xPnts=linspace(0,(winLength),length(ern));
+plot(xPnts,detrend(crn))
+ylabel('Voltage (uV)')
+xlabel('Time (ms)')
+hold on;
+plot(xPnts,detrend(ern))
+legend('Correct','Error')
+hold off;
+

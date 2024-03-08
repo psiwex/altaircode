@@ -1,0 +1,15 @@
+Bin 1
+Incorrect Response
+.{9;10}
+
+Bin 2
+Correct Response
+.{3;4}
+
+Bin 3
+Congruent Stimulus
+.{1}
+
+Bin 4
+Incongruent Stimulus
+.{2}

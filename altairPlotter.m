@@ -37,7 +37,7 @@ winLength=.5;
 preLength=1;
 chanLim=48;
 % channel fcz:
-chanSel=48;
+chanSel=41;
 EEG.srate=256;
 totalLength=(EEG.srate*(preLength+winLength))+1;
 
@@ -49,9 +49,9 @@ incRtErn=0;
 lwrBnd=round(preLength*EEG.srate);
 searchBnd=round(1.1*EEG.srate);
 
-means=mean(ern4(:,lwrBnd:searchBnd),2);
-maxs=max(abs(ern4(:,lwrBnd:searchBnd))')';
-stds=std(ern4(:,lwrBnd:searchBnd)')';
+means=mean(ern1(:,lwrBnd:searchBnd),2);
+maxs=max(abs(ern1(:,lwrBnd:searchBnd))')';
+stds=std(ern1(:,lwrBnd:searchBnd)')';
 
 %% figures 
 % ern

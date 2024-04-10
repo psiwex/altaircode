@@ -1,4 +1,4 @@
-function EEG = altairPreproc(EEG)
+function [ERP,erns] = altairPreproc(fName,raw_bdf_loadpath,raw_dataset_savepath,ongoing_dataset_savepath,processed_dataset_savepath,erpset_savepath,raw_eventlist_savepath,processed_eventlist_savepath,binlister_loadpath,channelLocationFile)
 % Extract the EEG, based on Gorka's code
 %
 %  Parameters:
@@ -11,135 +11,102 @@ function EEG = altairPreproc(EEG)
 %
 % Assumes:  SOAR preprocessing base on Gorka for rough EEG. 
 
-% load('C:\Users\John\Documents\MATLAB\soarData\OSU-00001-04B\Actiview\OSU-00001-04B-01-ERN.bdf.mat')
+subName = {'TRY100a_ERN', 'TRY101a_ERN','TRY102a_ERN'};
 
-channelLocationFile = 'C:\Users\John\Documents\MATLAB\eeglab2021.1\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp';
+% load EEGlab
+[ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
+% load ERPlab
+ALLERP = buildERPstruct([]);
+CURRENTERP = 0;
 
-% EEG Processing Script for Gorka lab, James Glazer 3/7/23: glazerja1@gmail.com
-%
-% Processing Steps Simplified:
-% 	1. Load raw BDf, save raw .set/.fdt datset.
-% 	2. Resample, re-reference, filter.
-% 	3. Remove/interpolate bad channels (save _removedchans and _interp .set/.fdt datasets).
-% 	4. Create eventlist, binlister, segment/epoch w/baseline correction.
-% 	5. Ocular Correct, artifact reject, calculate average ERPs.
-% 	6. Save "completed" .set/.fdt dataset and .erp averaged erpset.
-%
-% How to use:
-%   1. Place all raw BDF files in same folder and enter this path/location.
-%   2. Put the name of each file in subName list.
-%   3. Create empty folders where the data will go and enter their path/location in the script.
-%       Recommended folder structure:
-%           GorkaData\RawBDF\                           .bdf raw files for all subjects
-%           GorkaData\Datasets\Raw:                     .set/.fdt datasets saved immediately after loading .bdf (raw data)
-%           GorkaData\Datasets\Processing:              .set/.fdt datasets saved at intermediate processing steps (saved after important processing steps)
-%           GorkaData\Datasets\Completed:               .set/.fdt datasets saved after completed preprocessing (ready for erp averaging)
-%           GorkaData\EventLists\Raw:                   .txt raw eventlists saved containing all trial/event code information
-%           GorkaData\EventLists\Processed:             .txt processed eventlists saved containing all artifact/bin information
-%           GorkaData\Binlister\GorkaBinlister.txt:     .txt file containing binlister information for epoching/segmenting/averaging
-%           GorkaData\Erpsets:                          .erp final fully processed erpset files ready for ERP plotting, data exporting, and grand averaging
-%   4. Click "Run".
-% 
-% Processing Steps Summary:
-%   Steps 1-4: Load raw BDF, edit/save .set/.fdt dataset, resample.
-%   Steps 5-7: Remove unused/double channels, re-reference, create VEOG/HEOG channels and remove VEO+/VEO-/HEOR/HEOL
-%   Steps 8-10: Filter and save .set/.fdt dataset with full channel information
-%   Steps 11-14: Remove VEOG/HEOG, detect bad channels, reload dataset above with full channels, remove bad channels, save dataset, interpolate removed channels
-%   Steps 15-19: Create eventlist/load binlist, epoch/segment (w/baseline correct), ocular correct, remove VEOG/HEOG
-%   Steps 20-23: Artifact detect/reject, export eventlist with artifact information, get channel locations, save fully processed dataset
-%   Steps 24-25: Compute average erps and save final .erp files ready for ERP plotting, data exporting, and grand averaging
-% 
-% Processing Steps Detailed:
-% 1. Load the raw .BDF file
-% 2. Edit dataset name and save raw .set/.fdt file
-% 3. Resample data PROPERLY, For SIFT to ease antialiasing filter slope, see code from Makoto: 
-% 4. Load channel locations from channelLocationFile
-% 5. Channel Operations: Remove unused/double electrodes, reorder remaining channels: New Channel list: 0-34 = scalp, 35-38 = EOGs, 39-40 = Mastoids
-    % 5a. Remove following electrodes: ST1/ST2/EKG1/EKG2/PA1/PA2 (channels 33-38) and GSR1/GSR2/ERG1/ERG2/RESP/PLET/TEMP (channels 55-61)
-    % 5b. Remove double electrodes: VEO+/VEO-/HEOR/HEOL/M1/M2/FCz/Iz (channels 47-54)
-    % 5c. Move FCz/Iz to channels 33-34, Move external sensors (M1/M2/VEO+/VEO-/HEOR/HEOL) to end of channel list 35-40
-% 6. Re-reference to average of mastoids (channels 39/40), remove M1/M2
-% 7. Create VEOG & HEOG difference for Gratton & Coles Ocular Correction Regression performed later, remove VEO+/VEO-/HEOR/HEOL
-% 8. Filter the Data: IIR Butterworth bandpass 0.1 to 30 Hz
-% 9. Reload channel locations
-% 10. Edit dataset name and save preprocessed .set/.fdt file with FULL channel information BEFORE removing channels
-% 11. Automatic bad channel detection/rejection using clean_rawdata
-%   11a. First remove VEOG/HEOG BEFORE bad channel detection/removal: Final Channel list: 0-34 = SCALP chans
-%   11b. Reload channel locations
-%   11c. Automatically detect and remove bad SCALP chans using clean_rawdata default parameters
-%   11d. Get list of full remaining "good" SCALP EEG channels
-%   11e. Add VEOG/HEOG to trimChans list because these are "good" by default as we don't want to remove them
-% 12. Remove bad channels, keep VEOG/HEOG for ocular correction later
-%   12a: Reload dataset recently saved BEFORE removing bad channels that still has VEOG/HEOG
-%   12b. Save original channels for all scalp electrodes, used to interpolate bad electrodes later
-%   12c. get list of channels before channel rejection
-% 	12d. get list of bad/rejected channels by finding the difference between allChans and trimChans lists
-%   12f. Actually remove the bad channels using badChansList
-% 13. Edit dataset name and save preprocessed .set/.fdt file AFTER removing channels
-% 14. Interpolate bad channels
-% 15. Create & Save EventLists
-% 16. Separate the trials into Bins by loading your BinLister file
-% 17. Epoch the Data: Window and Baseline
-% 18. Blink correction using Gratton & Coles ocular correction
-% 19. Remove VEOG/HEOG after Ocular Correction: Final Channel list: 0-34 = scalp, Reload channel locations
-% 20. Automatically detect & reject trials/epochs for each event code in each bin
-%   20a. Artifact Rejection: ERPLAB Moving Window: Remove epochs exceeding voltage threshold as a moving window with a total amplitude, window size, and window step
-%   20b. Artifact Rejection: ERPLAB Sample-to-Sample: Remove epochs exceeding voltage threshold between two sampling points
-%   20c. Artifact Rejection: ERPLAB Flatline: Remove epochs with flatlined data lower than voltage threshold
-% 21. Export EventList containing bin/artifact information
-% 22. Look up channel locations again
-% 23. Edit dataset name and save fully processed .set/.fdt file that is ready for averaging into erpset .erp file
-% 24. Compuate average ERPs using erplab to create .erp file
-% 25. Save the erpset .erp file
+% Process data
+%for iSubject = 1:length(subName)
 
-
-% ===== Manually enter the path location on your machine for the following folders =====
-%clear all; 
-close all; clc;
-% path containing raw .BDF files to load
-raw_bdf_loadpath = 'C:\Users\John\Documents\MATLAB\soarData\';
-
-% path to save raw datasets as .set/.fdt eeglab format
-raw_dataset_savepath = 'C:\Users\glaze\Desktop\GorkaScripts\data\datasets\Raw\';
-% path to save .set/.fdt datasets at intermediate processing steps: optional but strongly recommended
-%   example 1: datasets saved after bad channel rejection can be used to determine which channels were removed and interpolated
-%   example 2: datasets saved after artifact rejection can be used to determine which and how many epochs/trials/conditions were rejected 
-%       Note: This is required to use SummaryScript.m to save details on bad channels/artifact rejection results
-ongoing_dataset_savepath = 'C:\Users\glaze\Desktop\GorkaScripts\data\datasets\Processing\';
-% path to save fully processed .set/.fdt files before ERP averaging
-processed_dataset_savepath = 'C:\Users\glaze\Desktop\GorkaScripts\data\datasets\Completed\';
-% path to save erpsets in erplab .erp format
-erpset_savepath = 'C:\Users\glaze\Desktop\GorkaScripts\data\Erpsets\';
-erpset_savepath = 'C:\Users\John\Documents\MATLAB\soarData\erpLabs\';
-% save raw and processed eventlist path: 
-raw_eventlist_savepath = 'C:\Users\glaze\Desktop\GorkaScripts\data\EventLists\Raw\';
-processed_eventlist_savepath = 'C:\Users\glaze\Desktop\GorkaScripts\data\EventLists\Processed\';
-% binlister path: see https://github.com/lucklab/erplab/blob/master/pop_functions/pop_binlister.m
-binlister_loadpath = 'C:\Users\John\Documents\MATLAB\soarEtl\GorkaBinlister.txt';
-% channelLocationFile: this path is found in your eeglab dipfit plugin folder: eeglab\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp
-channelLocationFile = 'C:\Users\John\Documents\MATLAB\eeglab2021.1\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp';
-%channelLocationFile = 'C:\Users\glaze\Documents\MatLabPrograms\eeglab2020_0\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp';
+    % ===== Steps 1-4: Load raw BDF, edit/save .set/.fdt dataset, resample =====
+    
+	% 1. Load the raw .BDF file
+    EEG = pop_biosig(fName);
+    %EEG = pop_biosig([raw_bdf_loadpath subName{iSubject} '.bdf']);
 
 	% 2. Edit dataset name and save raw .set/.fdt file
-	%EEG = pop_editset(EEG, 'setname', [subName{iSubject} '_Raw']);
-      % https://eeglab.org/others/Firfilt_FAQ.html#Q._For_Granger_Causality_analysis.2C_what_filter_should_be_used.3F_.2804.2F26.2F2018_Updated.29
+	EEG = pop_editset(EEG, 'setname', [fName '_Raw']);
+	EEG = pop_saveset(EEG, 'filename',[fName '_Raw.set'], 'filepath', raw_dataset_savepath);
+
+    % 3. Resample data PROPERLY, For SIFT to ease antialiasing filter slope, see code from Makoto: 
+        % https://sccn.ucsd.edu/wiki/Makoto%27s_useful_EEGLAB_code
+        % https://eeglab.org/others/Firfilt_FAQ.html#Q._For_Granger_Causality_analysis.2C_what_filter_should_be_used.3F_.2804.2F26.2F2018_Updated.29
     EEG = pop_resample(EEG, 256, 0.8, 0.4); % BioSemi
 
     % 4. Load channel locations from channelLocationFile
     EEG = pop_chanedit(EEG, 'lookup', channelLocationFile);
-close; 
-    x=EEG.data;
+    eeglab redraw;
 
-    avDum=.5*(x(39,:)+x(40,:));
-    x=x-avDum;
+    % ===== Steps 5-7: Remove unused/double channels, re-reference, create VEOG/HEOG channels and remove VEO+/VEO-/HEOR/HEOL =====
+    
+    % 5. Channel Operations: Remove unused/double electrodes, reorder remaining channels: New Channel list: 0-34 = scalp, 35-38 = EOGs, 39-40 = Mastoids
+    %   5a. Remove following electrodes: ST1/ST2/EKG1/EKG2/PA1/PA2 (channels 33-38) and GSR1/GSR2/ERG1/ERG2/RESP/PLET/TEMP (channels 55-61)
+    %   5b. Remove double electrodes: VEO+/VEO-/HEOR/HEOL/M1/M2/FCz/Iz (channels 47-54)
+    %   5c. Move FCz/Iz to channels 33-34, Move external sensors (M1/M2/VEO+/VEO-/HEOR/HEOL) to end of channel list 35-40
+    % 
+    % WARNING: if data channels differ from TRY100a_ERN/TRY101a_ERN/TRY102a_ERN you will need to edit this section to match
+    %   Note: to recreate this code using different channels, use erplab -> EEG channel operations 
+    %   -> click "Clear Equations" -> check "Create new dataset" -> click reference assistant
+    %   -> enter 0 into "Ch_REF = ", check "Copy original label to new label"
+    %   -> check "If a channel is not being re-referenced, include an equation for simply copying the channel (recommended for independent transformations)"
+    %   -> check "All Channels" -> click "ok", channel equations will appear in the white box
+    %   Now you can edit the equations so that they match the locations below, then -> click "Run"
+    % After it runs, type "EEG.history" into the command line to get your code (note: you can delete the " - ( 0 )")
+    EEG = pop_eegchanoperator(EEG, {...
+        'nch1 = ch1 Label Fp1',    'nch2 = ch2 Label AF3',     'nch3 = ch3 Label F7',     'nch4 = ch4 Label F3',    'nch5 = ch5 Label FC1',...
+        'nch6 = ch6 Label FC5',    'nch7 = ch7 Label T7',      'nch8 = ch8 Label C3',     'nch9 = ch9 Label CP1',   'nch10 = ch10 Label CP5',...
+        'nch11 = ch11 Label P7',   'nch12 = ch12 Label P3',    'nch13 = ch13 Label Pz',   'nch14 = ch14 Label PO3', 'nch15 = ch15 Label O1',...
+        'nch16 = ch16 Label Oz',   'nch17 = ch17 Label O2',    'nch18 = ch18 Label PO4',  'nch19 = ch19 Label P4',  'nch20 = ch20 Label P8',...
+        'nch21 = ch21 Label CP6',  'nch22 = ch22 Label CP2',   'nch23 = ch23 Label C4',   'nch24 = ch24 Label T8',  'nch25 = ch25 Label FC6',...
+        'nch26 = ch26 Label FC2',  'nch27 = ch27 Label F4',    'nch28 = ch28 Label F8',   'nch29 = ch29 Label AF4', 'nch30 = ch30 Label Fp2',...
+        'nch31 = ch31 Label Fz',   'nch32 = ch32 Label Cz',    'nch33 = ch45 Label FCz',  'nch34 = ch46 Label Iz',  'nch35 = ch39 Label VEO+',...
+        'nch36 = ch40 Label VEO-', 'nch37 = ch41 Label HEOR',  'nch38 = ch42 Label HEOL', 'nch39 = ch43 Label M1',  'nch40 = ch44 Label M2'},...
+         'Warning', 'off' );
 
-    x35=(x(35,:)-x(36,:));
-    x36=(x(37,:)-x(38,:));
-    x(35,:)=x35;
-    x(36,:)=x36;
-    EEG.data=x;
+    % 6. Re-reference to average of mastoids (channels 39/40), remove M1/M2
+    % 	Note: to recreate this code using different channels, follow the steps above for Channel Operations but enter ((ch39 + ch40)/2) into "Ch_REF = "
+    %   -> then remove the last two lines ('nch39 = nch39 - ((ch39 + ch40)/2) Label M1',  'nch40 = ch40 - ((ch39 + ch40)/2) Label M2')
+    %   -> then click "Run" and afterwards type "EEG.history" into the command line to get your code
+    EEG = pop_eegchanoperator(EEG, {...
+        'nch1 = ch1 - ((ch39 + ch40)/2) Label Fp1',    'nch2 = ch2 - ((ch39 + ch40)/2) Label AF3',     'nch3 = ch3 - ((ch39 + ch40)/2) Label F7',...
+        'nch4 = ch4 - ((ch39 + ch40)/2) Label F3',     'nch5 = ch5 - ((ch39 + ch40)/2) Label FC1',     'nch6 = ch6 - ((ch39 + ch40)/2) Label FC5',...
+        'nch7 = ch7 - ((ch39 + ch40)/2) Label T7',     'nch8 = ch8 - ((ch39 + ch40)/2) Label C3',      'nch9 = ch9 - ((ch39 + ch40)/2) Label CP1',...
+        'nch10 = ch10 - ((ch39 + ch40)/2) Label CP5',  'nch11 = ch11 - ((ch39 + ch40)/2) Label P7',    'nch12 = ch12 - ((ch39 + ch40)/2) Label P3',...
+        'nch13 = ch13 - ((ch39 + ch40)/2) Label Pz',   'nch14 = ch14 - ((ch39 + ch40)/2) Label PO3',   'nch15 = ch15 - ((ch39 + ch40)/2) Label O1',...
+        'nch16 = ch16 - ((ch39 + ch40)/2) Label Oz',   'nch17 = ch17 - ((ch39 + ch40)/2) Label O2',    'nch18 = ch18 - ((ch39 + ch40)/2) Label PO4',...
+        'nch19 = ch19 - ((ch39 + ch40)/2) Label P4',   'nch20 = ch20 - ((ch39 + ch40)/2) Label P8',    'nch21 = ch21 - ((ch39 + ch40)/2) Label CP6',...
+        'nch22 = ch22 - ((ch39 + ch40)/2) Label CP2',  'nch23 = ch23 - ((ch39 + ch40)/2) Label C4',    'nch24 = ch24 - ((ch39 + ch40)/2) Label T8',...
+        'nch25 = ch25 - ((ch39 + ch40)/2) Label FC6',  'nch26 = ch26 - ((ch39 + ch40)/2) Label FC2',   'nch27 = ch27 - ((ch39 + ch40)/2) Label F4',...
+        'nch28 = ch28 - ((ch39 + ch40)/2) Label F8',   'nch29 = ch29 - ((ch39 + ch40)/2) Label AF4',   'nch30 = ch30 - ((ch39 + ch40)/2) Label Fp2',...
+        'nch31 = ch31 - ((ch39 + ch40)/2) Label Fz',   'nch32 = ch32 - ((ch39 + ch40)/2) Label Cz',    'nch33 = ch33 - ((ch39 + ch40)/2) Label FCz',...
+        'nch34 = ch34 - ((ch39 + ch40)/2) Label Iz',   'nch35 = ch35 - ((ch39 + ch40)/2) Label VEO+',  'nch36 = ch36 - ((ch39 + ch40)/2) Label VEO-',...
+        'nch37 = ch37 - ((ch39 + ch40)/2) Label HEOR', 'nch38 = ch38 - ((ch39 + ch40)/2) Label HEOL'}, 'ErrorMsg', 'popup', 'Warning', 'off' );
 
-
+    % 7. Create VEOG & HEOG difference for Gratton & Coles Ocular Correction Regression performed later, remove VEO+/VEO-/HEOR/HEOL
+    %   To recreate using different channels, follow identical steps above for Channel Operations, Once the equations are created in the white box:
+    %   Delete the last four lines (nch35 = ch35 Label VEO+, nch36 = ch36, Label VEO-, nch37 = ch37 Label HEOR, nch38 = ch38 Label HEOL)
+    %   Add the following two lines:
+    %       nch35 = ch35-ch36 Label VEOG
+    %       nch36 = ch37-ch38 Label HEOG
+    %   Click "Run", type EEG.history afterwards to get code
+    EEG = pop_eegchanoperator(EEG, {...
+        'nch1 = ch1 Label Fp1',  'nch2 = ch2 Label AF3',  'nch3 = ch3 Label F7',  'nch4 = ch4 Label F3',...
+        'nch5 = ch5 Label FC1',  'nch6 = ch6 Label FC5',  'nch7 = ch7 Label T7',  'nch8 = ch8 Label C3',...
+        'nch9 = ch9 Label CP1',  'nch10 = ch10 Label CP5',  'nch11 = ch11 Label P7',  'nch12 = ch12 Label P3',...
+        'nch13 = ch13 Label Pz',  'nch14 = ch14 Label PO3',  'nch15 = ch15 Label O1',  'nch16 = ch16 Label Oz',...
+        'nch17 = ch17 Label O2',  'nch18 = ch18 Label PO4',  'nch19 = ch19 Label P4',  'nch20 = ch20 Label P8',...
+        'nch21 = ch21 Label CP6',  'nch22 = ch22 Label CP2',  'nch23 = ch23 Label C4',  'nch24 = ch24 Label T8',...
+        'nch25 = ch25 Label FC6',  'nch26 = ch26 Label FC2',  'nch27 = ch27 Label F4',  'nch28 = ch28 Label F8',...
+        'nch29 = ch29 Label AF4',  'nch30 = ch30 Label Fp2',  'nch31 = ch31 Label Fz',  'nch32 = ch32 Label Cz',...
+        'nch33 = ch33 Label FCz',  'nch34 = ch34 Label Iz',  'nch35 = ch35-ch36 Label VEOG',  'nch36 = ch37-ch38 Label HEOG'},...
+        'ErrorMsg', 'popup', 'Warning', 'off' );
+    
+    % ===== Steps 8-10: Filter and save .set/.fdt dataset with full channel information =====
+    
 	% 8. Filter the Data: IIR Butterworth bandpass 0.1 to 30 Hz
 	EEG = pop_basicfilter(EEG, 1:EEG.nbchan,...
 		'Boundary', 'boundary',...	% Boundary events
@@ -150,12 +117,12 @@ close;
 		'RemoveDC', 'on' );			% Remove DC offset
 
     % 9. Reload channel locations
-    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile); close;
-    eeglab redraw; close all;
+    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
+    eeglab redraw;
 
     % 10. Edit dataset name and save preprocessed .set/.fdt file with FULL channel information BEFORE removing channels
-	%EEG = pop_editset(EEG, 'setname', [subName{iSubject} '_ChopResampFilt']);
-	%EEG = pop_saveset(EEG, 'filename',[subName{iSubject} '_ChopResampFilt.set'], 'filepath', ongoing_dataset_savepath);
+	EEG = pop_editset(EEG, 'setname', [fName '_ChopResampFilt']);
+	EEG = pop_saveset(EEG, 'filename',[fName '_ChopResampFilt.set'], 'filepath', ongoing_dataset_savepath);
 
     % ===== Steps 11-14: remove VEOG/HEOG, detect bad channels, reload dataset above with full channels, remove bad channels, save dataset, interpolate removed channels =====
     
@@ -163,15 +130,15 @@ close;
     %   11a. First remove VEOG/HEOG BEFORE bad channel detection/removal: Final Channel list: 0-34 = SCALP chans
     EEG = pop_select(EEG, 'nochannel',{'VEOG','HEOG'}); 
     %   11b. Reload channel locations
-    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile); close;
-    eeglab redraw; close all;
+    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
+    eeglab redraw;
     %   11c. Automatically detect and remove bad SCALP chans using clean_rawdata default parameters
     EEG = pop_clean_rawdata(EEG,...
         'FlatlineCriterion', 5,...      % Maximum tolerated flatline duration in seconds (Default: 5)
         'ChannelCriterion', 0.85,...    % Minimum channel correlation with neighboring channels (default: 0.85)
         'LineNoiseCriterion', 4,...     % Maximum line noise relative to signal in standard deviations (default: 4)
         'Highpass','off','BurstCriterion','off','WindowCriterion','off','BurstRejection','off','Distance','Euclidian');
-    %eeglab redraw;
+    eeglab redraw;
     %   11d. Get list of full remaining "good" SCALP EEG channels
     trimChans = {};
     for channel = 1:EEG.nbchan
@@ -183,7 +150,7 @@ close;
 
     % 12. Remove bad channels, keep VEOG/HEOG for ocular correction later
     %   12a: Reload dataset recently saved BEFORE removing bad channels that still has VEOG/HEOG
-%    EEG = pop_loadset('filename',[subName{iSubject} '_ChopResampFilt.set'], 'filepath', ongoing_dataset_savepath);
+    EEG = pop_loadset('filename',[fName '_ChopResampFilt.set'], 'filepath', ongoing_dataset_savepath);
     %   12b. Save original channels for all scalp electrodes, used to interpolate bad electrodes later
     originalEEG = EEG;
     %   12c. get list of channels before channel rejection
@@ -199,30 +166,35 @@ close;
             badChansList{end+1} = allChans{channel};
         end
     end
-    eeglab redraw; close all;
+    eeglab redraw;
     %   12f. Actually remove the bad channels using badChansList
     for channel = 1:length(badChansList)
         EEG = pop_select(EEG, 'nochannel',{badChansList{channel}});
     end
-    eeglab redraw; close all;
+    eeglab redraw;
 
     % 13. Edit dataset name and save preprocessed .set/.fdt file AFTER removing channels
-	%EEG = pop_editset(EEG, 'setname', [subName{iSubject} '_ChopResampFilt_removedchans']);
-	%EEG = pop_saveset(EEG, 'filename',[subName{iSubject} '_ChopResampFilt_removedchans.set'], 'filepath', ongoing_dataset_savepath);
+	EEG = pop_editset(EEG, 'setname', [fName '_ChopResampFilt_removedchans']);
+	EEG = pop_saveset(EEG, 'filename',[fName '_ChopResampFilt_removedchans.set'], 'filepath', ongoing_dataset_savepath);
 
     % 14. Interpolate bad channels, resave dataset
     EEG = pop_interp(EEG, originalEEG.chanlocs, 'spherical');
-    %eeglab redraw;
-    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile); close;
-    eeglab redraw; close all;
-	%EEG = pop_editset(EEG, 'setname', [subName{iSubject} '_ChopResampFilt_Interp']);
-	%EEG = pop_saveset(EEG, 'filename',[subName{iSubject} '_ChopResampFilt_Interp.set'], 'filepath', ongoing_dataset_savepath);
-    %eeglab redraw;
+    eeglab redraw;
+    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
+    eeglab redraw;
+	EEG = pop_editset(EEG, 'setname', [fName '_ChopResampFilt_Interp']);
+	EEG = pop_saveset(EEG, 'filename',[fName '_ChopResampFilt_Interp.set'], 'filepath', ongoing_dataset_savepath);
+    eeglab redraw;
 
     % ===== Steps 15-19: create eventlist/load binlist, epoch/segment (w/baseline correct), ocular correct, remove VEOG/HEOG =====
 	
     % 15. Create & Save EventLists
 	% 	See: https://jennifervendemia.files.wordpress.com/2013/03/very-simple-notes-on-event-lists-file-formats-in-erplab.pdf
+%     EEG  = pop_creabasiceventlist(EEG,...
+%         'AlphanumericCleaning', 'on',...        % Replace Letters with Numbers
+%         'BoundaryNumeric', { -99 },...          % Boundary event marker
+%         'BoundaryString', { 'boundary' },...    % Boundary string marker
+%         'Eventlist', [raw_eventlist_savepath 'Raw_EventList_' fName '.txt']);
     EEG  = pop_creabasiceventlist(EEG,...
         'AlphanumericCleaning', 'on',...        % Replace Letters with Numbers
         'BoundaryNumeric', { -99 },...          % Boundary event marker
@@ -258,8 +230,8 @@ close;
     
     % 19. Remove VEOG/HEOG after Ocular Correction: Final Channel list: 0-34 = scalp, Reload channel locations
     EEG = pop_select(EEG, 'nochannel',{'VEOG','HEOG'}); 
-    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile); close;
-    eeglab redraw; close all;
+    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
+    eeglab redraw;
 
     % ===== Steps 20-23: artifact detect/reject, export eventlist with artifact information, get channel locations, save fully processed dataset =====
     
@@ -289,22 +261,33 @@ close;
 		'Twindow',      [ -500 1000] );     % Test window
 
 	% 21. Export EventList containing bin/artifact information
-%     EEG = pop_exporteegeventlist(EEG,...
-%         'Filename', ['Processed_EventList_ern.txt']);
+    EEG = pop_exporteegeventlist(EEG,...
+        'Filename', [processed_eventlist_savepath 'Processed_EventList_' fName '.txt']);
 
 	% 22. Look up channel locations again
-    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile); close;
-    eeglab redraw; close all;
+    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
+    eeglab redraw;
 	
+    % 23. Edit dataset name and save fully processed .set/.fdt file that is ready for averaging into erpset .erp file
+	EEG = pop_editset(EEG, 'setname', [fName '_ChOpResamp_FiltElist_BinEpochOC_ChanRejInterp']);
+	EEG = pop_saveset(EEG, 'filename',[fName '_ChOpResamp_FiltElist_BinEpochOC_ChanRejInterp.set']);
+    eeglab redraw;
+    
+    % ===== Steps 24-25: Compute average erps and save final .erp files ready for ERP plotting, data exporting, and grand averaging =====
 
-ERP = pop_averager(EEG, 'Criterion', 'all');
+    % 24. Compuate average ERPs using erplab to create .erp file
+    ERP = pop_averager(EEG, 'Criterion', 'good', 'ExcludeBoundary', 'on');
 
-x=ERP.bindata;
-%x=mean(x,3);
-EEG.data=x;
-[~,~,z]=size(EEG.data);
-EEG.ntrials=ERP.ntrials;
-EEG.trials=z;
+	% 25. Save the erpset .erp file
+	ERP = pop_savemyerp(ERP,...
+		'erpname',  [fName '_erpset'],...		% Name the ERP set
+		'filename', [fName '_erpset.erp'],...	% Name the file
+		'filepath', erpset_savepath,...                     % Path to save ERP set
+		'Warning', 'off');
 
+	% update erplab
+	CURRENTERP = CURRENTERP + 1;
+	ALLERP(CURRENTERP) = ERP;
+erns=ERP.bindata;
 
 end

@@ -1,4 +1,4 @@
-close all;
+%close all;
 clear; 
 clc;
 % Bin 1
@@ -16,28 +16,42 @@ clc;
 % Bin 4
 % Incongruent Stimulus
 % .{2}
-% bin1
-load('ernM1.mat','ern1');
+% % bin1
+%load('ernM1.mat','ern1');
+load('goodErn1.mat','ern1');
+% 
+% % bin2
+%load('ernM2.mat','ern2');
+load('goodErn2.mat','ern2');
+% 
+% % bin3
+%load('ernM3.mat','ern3');
+load('goodErn3.mat','ern3');
+% 
+% % bin4
+%load('ernM4.mat','ern4');
+load('goodErn4.mat','ern4');
 
-% bin2
-load('ernM2.mat','ern2');
 
-% bin3
-load('ernM3.mat','ern3');
+load('OSU-00002-04B-01-ERN.bdf_kukri_ern.mat')
+x=EEG.data;
+ 
+% ern1=squeeze(x(:,:,1));
+% ern2=squeeze(x(:,:,2));
+% ern3=squeeze(x(:,:,3));
+% ern4=squeeze(x(:,:,4));
 
-% bin4
-load('ernM4.mat','ern4');
 
-
-load('OSU-00002-04B-01-ERN.bdf.mat')
 
 %% ern parameters
 
-winLength=.5;
-preLength=1;
+winLength=1;
+preLength=.5;
 chanLim=48;
 % channel fcz:
 chanSel=41;
+chanSel=31;
+
 EEG.srate=256;
 totalLength=(EEG.srate*(preLength+winLength))+1;
 
@@ -60,11 +74,11 @@ ern=ern1(chanSel,:);
 crn=ern2(chanSel,:);
 figure;
 xPnts=linspace(-(preLength),(winLength),length(ern));
-plot(xPnts,detrend(crn))
+plot(xPnts,(crn))
 ylabel('Voltage (uV)')
 xlabel('Time (ms)')
 hold on;
-plot(xPnts,detrend(ern))
+plot(xPnts,(ern))
 legend('Correct','Error')
 hold off;
 
@@ -100,11 +114,36 @@ ern=ern1(chanSel,(round(preLength*EEG.srate):end));
 crn=ern2(chanSel,(round(preLength*EEG.srate):end));
 figure;
 xPnts=linspace(0,(winLength),length(ern));
-plot(xPnts,detrend(crn))
+plot(xPnts,(crn))
 ylabel('Voltage (uV)')
 xlabel('Time (ms)')
 hold on;
-plot(xPnts,detrend(ern))
+plot(xPnts,(ern))
 legend('Correct','Error')
 hold off;
+
+%% compare all
+figure;
+e1=ern1(chanSel,:);
+e2=ern2(chanSel,:);
+e3=ern3(chanSel,:);
+e4=ern4(chanSel,:);
+xPnts=linspace(-500,1000,length(e1));
+plot(xPnts,(e1))
+ylabel('Voltage (uV)')
+xlabel('Time (ms)')
+hold on;
+plot(xPnts,(e2))
+plot(xPnts,(e3))
+plot(xPnts,(e4))
+legend('Line1','Line2','Line3','Line4')
+hold off;
+
+
+figure;
+x=mean(ern1);
+xPnts=linspace(-500,1000,length(x));
+plot(xPnts,x)
+ylabel('Voltage (uV)')
+xlabel('Time (ms)')
 

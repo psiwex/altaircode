@@ -42,6 +42,16 @@ npuSuf='NPU';
 dirName = 'C:\Users\John\Documents\MATLAB\soarData\';
 impName=strcat(subst,outEx);
 [sub] = subdir(dirName);
+filzList={};
+
+e1={};
+e2={};
+e3={};
+e4={};
+
+fileNums=[];
+
+fCount=0;
 
 metaData=struct2table(sub);
 fileList=metaData.name;
@@ -49,12 +59,12 @@ ii=fileList(1);
 for ij=1:length(fileList)
     ij/length(fileList);
     ii=fileList(ij);
-    fName=ii{1}
+    fName=ii{1};
 
     tf = endsWith(fName,impName);
 
     if (tf == true)
-        load(fName)
+        load(fName);
         
             
             
@@ -64,7 +74,8 @@ for ij=1:length(fileList)
             if (tf1 == true)
                 try
    
-
+%tf1
+ij
                     x=EEG.data;
                     x1=squeeze(x(1:chanLim,:,1));
                     x2=squeeze(x(1:chanLim,:,2));
@@ -74,7 +85,13 @@ for ij=1:length(fileList)
                     ern2=.5*([ern2+x2]);
                     ern3=.5*([ern3+x3]);
                     ern4=.5*([ern4+x4]);
-
+                    fCount=fCount+1;
+                    e1{fCount}=squeeze(x(:,:,1));
+                    e2{fCount}=squeeze(x(:,:,2));
+                    e3{fCount}=squeeze(x(:,:,3));
+                    e4{fCount}=squeeze(x(:,:,4));
+                    filzList{fCount}=fName;
+                    fileNums=[fileNums ij];
                     y1=EEG.ntrials.accepted;
                     epochAccepted=[epochAccepted; y1];
 
@@ -99,6 +116,14 @@ save('ernM4.mat','ern4');
 
 save('epochAccepted.mat','epochAccepted');
 save('epochRejected.mat','epochRejected');
+
+save('ernN1.mat','e1');
+save('ernN2.mat','e2');
+save('ernN3.mat','e3');
+save('ernN4.mat','e4');
+
+save('ernFileNames.mat','filzList');
+save('ernFileNums.mat','fileNums');
 
 end
 

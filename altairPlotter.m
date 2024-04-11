@@ -17,20 +17,20 @@ clc;
 % Incongruent Stimulus
 % .{2}
 % % bin1
-%load('ernM1.mat','ern1');
-load('goodErn1.mat','ern1');
+load('ernM1.mat','ern1');
+%load('goodErn1.mat','ern1');
 % 
 % % bin2
-%load('ernM2.mat','ern2');
-load('goodErn2.mat','ern2');
+load('ernM2.mat','ern2');
+%load('goodErn2.mat','ern2');
 % 
 % % bin3
-%load('ernM3.mat','ern3');
-load('goodErn3.mat','ern3');
+load('ernM3.mat','ern3');
+%load('goodErn3.mat','ern3');
 % 
 % % bin4
-%load('ernM4.mat','ern4');
-load('goodErn4.mat','ern4');
+load('ernM4.mat','ern4');
+%load('goodErn4.mat','ern4');
 
 
 load('OSU-00002-04B-01-ERN.bdf_kukri_ern.mat')

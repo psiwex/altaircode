@@ -1,4 +1,4 @@
-function [ERP,erns] = altairPreproc(fName,raw_bdf_loadpath,raw_dataset_savepath,ongoing_dataset_savepath,processed_dataset_savepath,erpset_savepath,raw_eventlist_savepath,processed_eventlist_savepath,binlister_loadpath,channelLocationFile)
+function [EEG,ERP,erns] = altairPreproc(fName,raw_bdf_loadpath,raw_dataset_savepath,ongoing_dataset_savepath,processed_dataset_savepath,erpset_savepath,raw_eventlist_savepath,processed_eventlist_savepath,binlister_loadpath,channelLocationFile)
 % Extract the EEG, based on Gorka's code
 %
 %  Parameters:
@@ -289,5 +289,11 @@ CURRENTERP = 0;
 	CURRENTERP = CURRENTERP + 1;
 	ALLERP(CURRENTERP) = ERP;
 erns=ERP.bindata;
+
+%x=mean(x,3);
+EEG.data=erns;
+[~,~,z]=size(EEG.data);
+EEG.ntrials=ERP.ntrials;
+EEG.trials=z;
 
 end

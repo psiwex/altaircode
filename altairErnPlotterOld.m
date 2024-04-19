@@ -1,7 +1,6 @@
 %close all;
 clear; 
 clc;
-plotChan='FCz';
 % Bin 1
 % Incorrect Response
 % .{9;10}
@@ -26,10 +25,9 @@ load('ernN4.mat','e4');
 load('ernFileNames.mat','filzList');
 load('ernFileNums.mat','fileNums');
 
-load('erperns.mat','erperns')
-load('erpernNames.mat','erpernNames');
-%load('OSU-00002-04B-01-ERN.bdf_kukri_ern.mat')
-%x=EEG.data;
+
+load('OSU-00002-04B-01-ERN.bdf_kukri_ern.mat')
+x=EEG.data;
  
 % ern1=squeeze(x(:,:,1));
 % ern2=squeeze(x(:,:,2));
@@ -52,44 +50,13 @@ totalLength=(EEG.srate*(preLength+winLength))+1;
 subSel=1;
 
 
-for subSel=1:length(erperns)
-ERPS=erperns(subSel);
-x=ERPS{1}.bindata;
-las=ERPS{1}.chanlocs;
-%labs=las.labels;
-chanValues={};
-myfield=squeeze(struct2cell(las));
-for i=1:length(las)
-chanValues{i}=myfield{1,i};
-end
+for subSel=1:length(fileNums)
+ern1=e1{subSel};
+ern2=e2{subSel};
+ern3=e3{subSel};
+ern4=e4{subSel};
 
-idx = strfind(chanValues,plotChan);
-
-for iss=1:length(las)
-y1=idx{iss};
-    if y1==1
-chanSel=iss;
-end
-end
-%firstabc = find( plotChan, 1 );
-
-
-
-fName=erpernNames{subSel};
-index = strfind(fName, '\');
-
-fName=fName((index(end)+1):end);
-
-ern1=squeeze(x(:,:,1));
-ern2=squeeze(x(:,:,2));
-ern3=squeeze(x(:,:,3));
-ern4=squeeze(x(:,:,4));
-%     ern1=e1{subSel};
-% ern2=e2{subSel};
-% ern3=e3{subSel};
-% ern4=e4{subSel};
-
-%fName=filzList{subSel};
+fName=filzList{subSel};
 % ern1=mean(ern1);
 % ern2=mean(ern2);
 % ern3=mean(ern3);
@@ -126,7 +93,7 @@ plot(xPnts,(ern))
 legend('Correct','Error')
 hold off;
 
-saveas(figureHandle,[fName 'ernChan' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
+saveas(figureHandle,['ernChan' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
 
 
 ern=mean(ern1);
@@ -140,7 +107,7 @@ hold on;
 plot(xPnts,(ern))
 legend('Correct','Error')
 hold off;
-%saveas(figureHandle2,[fName 'ernChanAveragedFromSub' num2str(subSel) '.jpg']);
+saveas(figureHandle2,['ernChanAveragedFromSub' num2str(subSel) '.jpg']);
 
 close all;
 end

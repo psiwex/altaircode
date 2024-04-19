@@ -29,8 +29,8 @@ CURRENTERP = 0;
     %EEG = pop_biosig([raw_bdf_loadpath subName{iSubject} '.bdf']);
 
 	% 2. Edit dataset name and save raw .set/.fdt file
-	EEG = pop_editset(EEG, 'setname', [fName '_Raw']);
-	EEG = pop_saveset(EEG, 'filename',[fName '_Raw.set'], 'filepath', raw_dataset_savepath);
+	EEG = pop_editset(EEG, 'setname', ['_Raw']);
+	EEG = pop_saveset(EEG, 'filename',['_Raw.set'], 'filepath', raw_dataset_savepath);
 
     % 3. Resample data PROPERLY, For SIFT to ease antialiasing filter slope, see code from Makoto: 
         % https://sccn.ucsd.edu/wiki/Makoto%27s_useful_EEGLAB_code
@@ -121,8 +121,8 @@ CURRENTERP = 0;
     eeglab redraw;
 
     % 10. Edit dataset name and save preprocessed .set/.fdt file with FULL channel information BEFORE removing channels
-	EEG = pop_editset(EEG, 'setname', [fName '_ChopResampFilt']);
-	EEG = pop_saveset(EEG, 'filename',[fName '_ChopResampFilt.set'], 'filepath', ongoing_dataset_savepath);
+	EEG = pop_editset(EEG, 'setname', ['_ChopResampFilt']);
+	EEG = pop_saveset(EEG, 'filename',['_ChopResampFilt.set'], 'filepath', ongoing_dataset_savepath);
 
     % ===== Steps 11-14: remove VEOG/HEOG, detect bad channels, reload dataset above with full channels, remove bad channels, save dataset, interpolate removed channels =====
     
@@ -150,7 +150,7 @@ CURRENTERP = 0;
 
     % 12. Remove bad channels, keep VEOG/HEOG for ocular correction later
     %   12a: Reload dataset recently saved BEFORE removing bad channels that still has VEOG/HEOG
-    EEG = pop_loadset('filename',[fName '_ChopResampFilt.set'], 'filepath', ongoing_dataset_savepath);
+    EEG = pop_loadset('filename',['_ChopResampFilt.set'], 'filepath', ongoing_dataset_savepath);
     %   12b. Save original channels for all scalp electrodes, used to interpolate bad electrodes later
     originalEEG = EEG;
     %   12c. get list of channels before channel rejection
@@ -174,16 +174,16 @@ CURRENTERP = 0;
     eeglab redraw;
 
     % 13. Edit dataset name and save preprocessed .set/.fdt file AFTER removing channels
-	EEG = pop_editset(EEG, 'setname', [fName '_ChopResampFilt_removedchans']);
-	EEG = pop_saveset(EEG, 'filename',[fName '_ChopResampFilt_removedchans.set'], 'filepath', ongoing_dataset_savepath);
+	EEG = pop_editset(EEG, 'setname', ['_ChopResampFilt_removedchans']);
+	EEG = pop_saveset(EEG, 'filename',['_ChopResampFilt_removedchans.set'], 'filepath', ongoing_dataset_savepath);
 
     % 14. Interpolate bad channels, resave dataset
     EEG = pop_interp(EEG, originalEEG.chanlocs, 'spherical');
     eeglab redraw;
     EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
     eeglab redraw;
-	EEG = pop_editset(EEG, 'setname', [fName '_ChopResampFilt_Interp']);
-	EEG = pop_saveset(EEG, 'filename',[fName '_ChopResampFilt_Interp.set'], 'filepath', ongoing_dataset_savepath);
+	EEG = pop_editset(EEG, 'setname', ['_ChopResampFilt_Interp']);
+	EEG = pop_saveset(EEG, 'filename',['_ChopResampFilt_Interp.set'], 'filepath', ongoing_dataset_savepath);
     eeglab redraw;
 
     % ===== Steps 15-19: create eventlist/load binlist, epoch/segment (w/baseline correct), ocular correct, remove VEOG/HEOG =====
@@ -261,16 +261,16 @@ CURRENTERP = 0;
 		'Twindow',      [ -500 1000] );     % Test window
 
 	% 21. Export EventList containing bin/artifact information
-    EEG = pop_exporteegeventlist(EEG,...
-        'Filename', [processed_eventlist_savepath 'Processed_EventList_' fName '.txt']);
+%     EEG = pop_exporteegeventlist(EEG,...
+%         'Filename', ['Processed_EventList_' fName '.txt']);
 
 	% 22. Look up channel locations again
     EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
     eeglab redraw;
 	
     % 23. Edit dataset name and save fully processed .set/.fdt file that is ready for averaging into erpset .erp file
-	EEG = pop_editset(EEG, 'setname', [fName '_ChOpResamp_FiltElist_BinEpochOC_ChanRejInterp']);
-	EEG = pop_saveset(EEG, 'filename',[fName '_ChOpResamp_FiltElist_BinEpochOC_ChanRejInterp.set']);
+	EEG = pop_editset(EEG, 'setname', ['_ChOpResamp_FiltElist_BinEpochOC_ChanRejInterp']);
+	EEG = pop_saveset(EEG, 'filename',['_ChOpResamp_FiltElist_BinEpochOC_ChanRejInterp.set']);
     eeglab redraw;
     
     % ===== Steps 24-25: Compute average erps and save final .erp files ready for ERP plotting, data exporting, and grand averaging =====
@@ -280,11 +280,11 @@ CURRENTERP = 0;
 
 	% 25. Save the erpset .erp file
 	ERP = pop_savemyerp(ERP,...
-		'erpname',  [fName '_erpset'],...		% Name the ERP set
-		'filename', [fName '_erpset.erp'],...	% Name the file
+		'erpname',  [ '_erpset'],...		% Name the ERP set
+		'filename', [ '_erpset.erp'],...	% Name the file
 		'filepath', erpset_savepath,...                     % Path to save ERP set
 		'Warning', 'off');
-
+xxxx=[ '_erpset.erp'];
 	% update erplab
 	CURRENTERP = CURRENTERP + 1;
 	ALLERP(CURRENTERP) = ERP;

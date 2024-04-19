@@ -39,7 +39,6 @@ fNameList={};
 % ii=fileList(1);
 load('erpernsFiles.mat','erpernsFiles');
 fileList=erpernsFiles;
-erpernNames={};
 for ij=1:length(fileList)
 ij/length(fileList)
     ii=fileList(ij);
@@ -55,11 +54,14 @@ if tf ~= (0)
 % snr0 = snrCompare(EEG.data,bnds,EEG.srate);
 % EEG = altairPreproc(EEG); 
 try
-%[EEG,ERP,erns] = altairPreproc(fName,raw_bdf_loadpath,raw_dataset_savepath,ongoing_dataset_savepath,processed_dataset_savepath,erpset_savepath,raw_eventlist_savepath,processed_eventlist_savepath,binlister_loadpath,channelLocationFile);
+[EEG,ERP,erns] = altairPreproc(fName,raw_bdf_loadpath,raw_dataset_savepath,ongoing_dataset_savepath,processed_dataset_savepath,erpset_savepath,raw_eventlist_savepath,processed_eventlist_savepath,binlister_loadpath,channelLocationFile);
 
-erpernNames{erpernNum}=fName;
+erperns{erpernNum}=ERP;
 erpernNum=erpernNum+1;
-
+outName=append(fName,outEx)
+save(outName,'EEG')
+outName2=append(fName,outEx2)
+save(outName2,'EEG')
 catch
 end
 
@@ -80,6 +82,6 @@ end
 %truPer=chanPercent(find(chanPercent~=1));
 %trueMean=mean(truPer);
 
-save('erpernNames.mat','erpernNames');
+save('erperns.mat','erperns');
 
 toc;

@@ -1,0 +1,15 @@
+Bin 1
+Loss Trial
+.{6}
+
+Bin 2
+Win Trial
+.{7}
+
+Bin 3
+Left Response
+.{11}
+
+Bin 4
+Right Response
+.{12}

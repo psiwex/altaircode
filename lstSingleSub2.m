@@ -1,20 +1,18 @@
-function [EEG,ERP,erns] = altairLstPreproc(fName,binListerPath,channelLocationFile)
-% Extract the EEG, based on Gorka's code
-%
-%  Parameters:
-%     filename  EEGLAB EEG structure
-
-%   Output:
-%     EEG     EEGLAB EEG structure with the output
-%
-%   Written by:  John LaRocco, May 2024
-%
-% Assumes:  SOAR preprocessing for LST based on Gorka for rough EEG. 
 
 
+%tic;
+fName='OSU-00001-04B-01-ERN.bdf';
+subName='OSU-00002-04B-01-LST';
 savePath='.';
 loadPath='.';
+channelLocationFile = 'C:\Users\John\Documents\MATLAB\eeglab2021.1\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp';
+binlister_loadpath='C:\Users\John\Documents\MATLAB\soarEtl\currentSoar\LstBinlister.txt';
+binListerPath=binlister_loadpath;
 savePathRunICA='.';
+% winLength=1;
+% f3=strcat(subName, '.log');
+% lst = readtable(f3,'NumHeaderLines',5,ReadRowNames=true);
+% llst=table2cell(lst);
 
     ALLERP = buildERPstruct([]);
 CURRENTERP = 0;
@@ -23,11 +21,8 @@ CURRENTERP = 0;
 
 
 
-EEG = pop_biosig([fName]);
+EEG = pop_biosig([subName '.bdf']);
 
-    %EEG = pop_biosig([raw_bdf_loadpath subName{iSubject} '.bdf']);
-
-	
 EEG = pop_editset(EEG, 'setname', [ '_Raw']);
 
 EEG = pop_saveset( EEG, 'filename',[ '_Raw.set'],...
@@ -124,10 +119,10 @@ eventTemplate=eTemplate.eventTemplate;
    % EEG = pop_eegfiltnew(EEG, 1, 0, 1650, 0, [], 0);
 EEG = pop_eegfiltnew(EEG, 1, 0, [], 0, [], 0);
 % 	% Rereference to MASTOIDS, remove mastoids
-%     EEG = pop_reref( EEG, [35, 36]);
-%     eeglab redraw;
-%     EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
-%     eeglab redraw;
+    EEG = pop_reref( EEG, [35, 36]);
+    eeglab redraw;
+    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
+    eeglab redraw;
     % 5. Use EEGLAB clean_rawdata (or PREP) to remove bad channels
     % Bad Channel Rejection using: Clean_rawdata method eeglab
     % first delete external sensors, retain scalp channels
@@ -283,7 +278,7 @@ s1=max(EEG.nbchan);
     % delete scalp channels, retain external channels
         % NOTE: NO CHANNEL LOOKUP: doesn't work with chan lookup for exgs don't give it spatial information because only four of them
     EEG = pop_eegchanoperator( EEG, {  'nch1 = ch35 - ( 0 ) Label SO2',  'nch2 = ch36 - ( 0 ) Label IO2',  'nch3 = ch37 - ( 0 ) Label LO2',  'nch4 = ch38 - ( 0 ) Label LO1',  'nch5 = ch39 - ( 0 ) Label M1',  'nch6 = ch40 - ( 0 ) Label M2'} , 'ErrorMsg', 'popup', 'Warning', 'off' );    
-%     eeglab redraw;
+    eeglab redraw;
 
     % use clean_rawdata only for bad channel rejection, these parameters are tuned for EOG electrodes
         % NOTE: The changed correlation parameter to .1 (exgs shouldn't really be correlated) and linenoisecriterion to 16 loose
@@ -453,7 +448,7 @@ clear EEG;
 
     % create eventlist erplab
     EEG  = pop_creabasiceventlist( EEG , 'AlphanumericCleaning', 'on', 'BoundaryNumeric', { -99 }, 'BoundaryString', { 'boundary' }, 'Eventlist',...
-        ['_EventList_BandFiltRejChanInterpMastRef.txt'] );
+        [subName '_EventList_BandFiltRejChanInterpMastRef.txt'] );
    
      
     EEG  = pop_binlister( EEG , 'BDF', binListerPath,...
@@ -513,5 +508,9 @@ EEG.data=erns;
 EEG.ntrials=ERP.ntrials;
 EEG.trials=z;
 
-
-end
+x=EEG.data;
+ern1=squeeze(x(:,:,1));
+ern2=squeeze(x(:,:,2));
+ern3=squeeze(x(:,:,3));
+ern4=squeeze(x(:,:,4));
+%save('lstSoarSingle5.mat','EEG');

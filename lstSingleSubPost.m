@@ -1,36 +1,30 @@
-function [EEG,ERP,erns] = altairLstPreproc(fName,binListerPath,channelLocationFile)
-% Extract the EEG, based on Gorka's code
-%
-%  Parameters:
-%     filename  EEGLAB EEG structure
-
-%   Output:
-%     EEG     EEGLAB EEG structure with the output
-%
-%   Written by:  John LaRocco, May 2024
-%
-% Assumes:  SOAR preprocessing for LST based on Gorka for rough EEG. 
 
 
+%tic;
+fName='OSU-00001-04B-01-ERN.bdf';
+fName='OSU-00001-04B-01-LST.bdf';
+subName='OSU-00002-04B-01-LST';
 savePath='.';
 loadPath='.';
+channelLocationFile = 'C:\Users\John\Documents\MATLAB\eeglab2021.1\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp';
+binlister_loadpath='C:\Users\John\Documents\MATLAB\soarEtl\LstBinlister.txt';
 savePathRunICA='.';
+winLength=1;
+f3=strcat(subName, '.log');
+lst = readtable(f3,'NumHeaderLines',5,ReadRowNames=true);
+llst=table2cell(lst);
 
-    ALLERP = buildERPstruct([]);
-CURRENTERP = 0;
+
 
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
 
 
 
-EEG = pop_biosig([fName]);
+EEG = pop_biosig([subName '.bdf']);
 
-    %EEG = pop_biosig([raw_bdf_loadpath subName{iSubject} '.bdf']);
+EEG = pop_editset(EEG, 'setname', [subName '_Raw']);
 
-	
-EEG = pop_editset(EEG, 'setname', [ '_Raw']);
-
-EEG = pop_saveset( EEG, 'filename',[ '_Raw.set'],...
+EEG = pop_saveset( EEG, 'filename',[subName '_Raw.set'],...
     'filepath',savePath);
 
 
@@ -39,7 +33,7 @@ eeglab redraw;
 
   % 1. load RAW data
   clear EEG;
-    EEG = pop_loadset('filename',[ '_Raw.set'],...
+    EEG = pop_loadset('filename',[subName '_Raw.set'],...
         'filepath',loadPath);
     eventTemplate=EEG.event;
     save('eventTemplate.mat','eventTemplate');
@@ -78,8 +72,8 @@ eeglab redraw;
     eeglab redraw;
 
     % 4. Save data here as _ChOpResamp256PREP,” these will get ICA weights later
-    EEG = pop_editset(EEG, 'setname', [ '_ChOpResamp256PREP']);
-    EEG = pop_saveset( EEG, 'filename',[ '_ChOpResamp256PREP.set'],...
+    EEG = pop_editset(EEG, 'setname', [subName '_ChOpResamp256PREP']);
+    EEG = pop_saveset( EEG, 'filename',[subName '_ChOpResamp256PREP.set'],...
          'filepath',savePath);
         eeglab redraw;
 
@@ -109,11 +103,17 @@ eeglab redraw;
 % Subject list
 %subName = {'CCS001_EEG1_LST', 	'CCS001_EEG2_LST', 	'CCS002_EEG1_LST', 	'CCS002_EEG2_LST', 	'CCS003_EEG1_LST', 	'CCS003_EEG2_LST'};
 
+%load EEGlab
+[ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
+
+% This is a blank event template to make sure we process all subjects, even those without event codes in their datasets
+% This wipes current events, but it doesn't matter because we will later apply the ICA weights to a dataset with event codes saved in _ChOpResamp256PREP
+%eventTemplate = load(eventTemplatePath);
 eTemplate=load('eventTemplate.mat');
 eventTemplate=eTemplate.eventTemplate;
 %clear EEG;
     % 1. load _ChOpResamp256PREP" to continue preprocessing
-    EEG = pop_loadset('filename',['_ChOpResamp256PREP.set'],...
+    EEG = pop_loadset('filename',[subName '_ChOpResamp256PREP.set'],...
         'filepath',loadPath);
   
     % 4. High pass zero phase 1 Hz cutoff FIR filter for ICA, Note: the transition band is automatically adjusted so that it always ends at DC, as recommended:
@@ -123,11 +123,7 @@ eventTemplate=eTemplate.eventTemplate;
         % CAUSALITY NOTE: consider causal filters etc. later ONLY FOR USE WITH Granger Causality analysis, 
    % EEG = pop_eegfiltnew(EEG, 1, 0, 1650, 0, [], 0);
 EEG = pop_eegfiltnew(EEG, 1, 0, [], 0, [], 0);
-% 	% Rereference to MASTOIDS, remove mastoids
-%     EEG = pop_reref( EEG, [35, 36]);
-%     eeglab redraw;
-%     EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
-%     eeglab redraw;
+
     % 5. Use EEGLAB clean_rawdata (or PREP) to remove bad channels
     % Bad Channel Rejection using: Clean_rawdata method eeglab
     % first delete external sensors, retain scalp channels
@@ -139,7 +135,7 @@ EEG = pop_eegfiltnew(EEG, 1, 0, [], 0, [], 0);
     
     % use clean_rawdata only for bad channel rejection, these parameters are tuned for SCALP electrodes
         % NOTE: very conservative ChannelCriterionMaxBadTime here to prepare data for ICA: If channel is abnormal for over 10% of data (.10)
-    EEG = pop_clean_rawdata(EEG,...
+    EEG = pop_clean_rawdata(ALLEEG,...
         'FlatlineCriterion',5,'ChannelCriterion',0.70,'LineNoiseCriterion',8,'ChannelCriterionMaxBadTime', .10, ...
         'Highpass','off' ,'BurstCriterion','off','WindowCriterion','off','BurstRejection','off','Distance','Euclidian');
     eeglab redraw;
@@ -151,7 +147,7 @@ EEG = pop_eegfiltnew(EEG, 1, 0, [], 0, [], 0);
     end
     clear EEG;
     % 1. load _ChOpResamp256PREP" once again to perform separate rejection on external sensors
-    EEG = pop_loadset('filename',['_ChOpResamp256PREP.set'],...
+    EEG = pop_loadset('filename',[subName '_ChOpResamp256PREP.set'],...
         'filepath',loadPath);
     
     % same 1 Hz high pass: these high passes are necessary to detect bad channels
@@ -177,7 +173,7 @@ s1=max(EEG.nbchan);
 
     % finally load the _ChOpResamp256PREP file one last time, this will be the final file that we will remove both scalp and EXG channels from
     clear EEG;
-    EEG = pop_loadset('filename',['_ChOpResamp256PREP.set'],...
+    EEG = pop_loadset('filename',[subName '_ChOpResamp256PREP.set'],...
         'filepath',loadPath);
     
     % same 1 Hz high pass, this time we apply 1 Hz high pass to prepare data for ICA
@@ -236,12 +232,12 @@ s1=max(EEG.nbchan);
 	eeglab redraw;
 
     % Save data here as ready for ICA: _ChOpResampPREP_1HzHpRejChanData
-    EEG = pop_editset(EEG, 'setname', ['_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA']);
-    EEG = pop_saveset( EEG, 'filename',['_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA.set'],...
+    EEG = pop_editset(EEG, 'setname', [subName '_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA']);
+    EEG = pop_saveset( EEG, 'filename',[subName '_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA.set'],...
          'filepath',savePath);
   clear EEG;
     % 1. load _ChOpResamp256PREP" to continue preprocessing
-    EEG = pop_loadset('filename',['_ChOpResamp256PREP.set'],...
+    EEG = pop_loadset('filename',[subName '_ChOpResamp256PREP.set'],...
         'filepath',loadPath);
   
     % 4. High pass zero phase 1 Hz cutoff FIR filter for ICA, Note: the transition band is automatically adjusted so that it always ends at DC, as recommended:
@@ -274,7 +270,7 @@ s1=max(EEG.nbchan);
     end
     clear EEG;
     % 1. load _ChOpResamp256PREP" once again to perform separate rejection on external sensors
-    EEG = pop_loadset('filename',['_ChOpResamp256PREP.set'],...
+    EEG = pop_loadset('filename',[subName '_ChOpResamp256PREP.set'],...
         'filepath',loadPath);
     
     % same 1 Hz high pass: these high passes are necessary to detect bad channels
@@ -283,7 +279,7 @@ s1=max(EEG.nbchan);
     % delete scalp channels, retain external channels
         % NOTE: NO CHANNEL LOOKUP: doesn't work with chan lookup for exgs don't give it spatial information because only four of them
     EEG = pop_eegchanoperator( EEG, {  'nch1 = ch35 - ( 0 ) Label SO2',  'nch2 = ch36 - ( 0 ) Label IO2',  'nch3 = ch37 - ( 0 ) Label LO2',  'nch4 = ch38 - ( 0 ) Label LO1',  'nch5 = ch39 - ( 0 ) Label M1',  'nch6 = ch40 - ( 0 ) Label M2'} , 'ErrorMsg', 'popup', 'Warning', 'off' );    
-%     eeglab redraw;
+    eeglab redraw;
 
     % use clean_rawdata only for bad channel rejection, these parameters are tuned for EOG electrodes
         % NOTE: The changed correlation parameter to .1 (exgs shouldn't really be correlated) and linenoisecriterion to 16 loose
@@ -298,7 +294,7 @@ s1=max(EEG.nbchan);
     end
 clear EEG;
     % finally load the _ChOpResamp256PREP file one last time, this will be the final file that we will remove both scalp and EXG channels from
-    EEG = pop_loadset('filename',['_ChOpResamp256PREP.set'],...
+    EEG = pop_loadset('filename',[subName '_ChOpResamp256PREP.set'],...
         'filepath',loadPath);
     
     % same 1 Hz high pass, this time we apply 1 Hz high pass to prepare data for ICA
@@ -357,22 +353,22 @@ clear EEG;
 	eeglab redraw;
 
     % Save data here as ready for ICA: _ChOpResampPREP_1HzHpRejChanData
-    EEG = pop_editset(EEG, 'setname', ['_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA']);
-    EEG = pop_saveset( EEG, 'filename',['_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA.set'],...
+    EEG = pop_editset(EEG, 'setname', [subName '_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA']);
+    EEG = pop_saveset( EEG, 'filename',[subName '_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA.set'],...
          'filepath',savePath);
-    EEG = pop_loadset('filename',['_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA.set'],...
+        EEG = pop_loadset('filename',[subName '_ChOpResamp256PREP_1HzHpRejChanData_ReadyForICA.set'],...
         'filepath',loadPath);
 
     EEG = pop_runica(EEG, 'icatype','runica', 'extended',1);
-    floatwrite(EEG.icaweights,['_ICAweight_ChOpResamp256PREP_1HzHpRejChanData.wts']);
-    floatwrite(EEG.icasphere,['_ICAsphere_ChOpResamp256PREP_1HzHpRejChanData.sph']);
+    floatwrite(EEG.icaweights,[subName '_ICAweight_ChOpResamp256PREP_1HzHpRejChanData.wts']);
+    floatwrite(EEG.icasphere,[subName '_ICAsphere_ChOpResamp256PREP_1HzHpRejChanData.sph']);
 
-    EEG = pop_saveset( EEG, 'filename',['_ChOpResamp256PREP_1HzHpRejChanData_RunICA.set'],...
+    EEG = pop_saveset( EEG, 'filename',[subName '_ChOpResamp256PREP_1HzHpRejChanData_RunICA.set'],...
         'filepath',savePathRunICA);
   
 clear EEG;
 %toc;
-    EEG = pop_loadset('filename',['_ChOpResamp256PREP.set'],...
+    EEG = pop_loadset('filename',[subName '_ChOpResamp256PREP.set'],...
         'filepath',loadPath);
 
     % just get scalp and mastoid channels
@@ -385,7 +381,7 @@ clear EEG;
     originalEEG_chanLocs = EEG.chanlocs;
     clear EEG;
     %load sets cleaned with ICA components removed. ChOpResamp256PREP_ICAclean, _ChOpResamp256PREP_1HzHpRejChanData_RunICA
-    EEG = pop_loadset('filename',['_ChOpResamp256PREP_1HzHpRejChanData_RunICA.set'],...
+    EEG = pop_loadset('filename',[subName '_ChOpResamp256PREP_1HzHpRejChanData_RunICA.set'],...
         'filepath',savePathRunICA);
     EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
     
@@ -435,83 +431,15 @@ clear EEG;
     eeglab redraw;
 
 % 	% Rereference to MASTOIDS, remove mastoids
-%      EEG = pop_reref( EEG, [35, 36]);
-%      eeglab redraw;
-%      EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
-%      eeglab redraw;
+    EEG = pop_reref( EEG, [35, 36]);
+    eeglab redraw;
+    EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
+    eeglab redraw;
 
     % Edit set name
-    EEG = pop_editset(EEG, 'setname', ['_BandFiltRejChanInterpMastRef']);
+    EEG = pop_editset(EEG, 'setname', [subName '_BandFiltRejChanInterpMastRef']);
     
     %save file
-    EEG = pop_saveset( EEG, 'filename',['_BandFiltRejChanInterpMastRef.set'],...
+    EEG = pop_saveset( EEG, 'filename',[subName '_BandFiltRejChanInterpMastRef.set'],...
          'filepath',savePath);
-
-    clear EEG;
-        EEG = pop_loadset('filename',['_BandFiltRejChanInterpMastRef.set'],...
-        'filepath',loadPath);
-
-    % create eventlist erplab
-    EEG  = pop_creabasiceventlist( EEG , 'AlphanumericCleaning', 'on', 'BoundaryNumeric', { -99 }, 'BoundaryString', { 'boundary' }, 'Eventlist',...
-        ['_EventList_BandFiltRejChanInterpMastRef.txt'] );
-   
-     
-    EEG  = pop_binlister( EEG , 'BDF', binListerPath,...
-        'IndexEL',  1, 'SendEL2', 'Workspace&EEG', 'UpdateEEG', 'on', 'Voutput', 'EEG' );
-
-    
-    EEG = pop_epochbin( EEG , [-200.0  1000.0],  'pre');
-    %eeglab redraw;
-%     	EEG = pop_gratton(EEG, 35, 'chans', 1:EEG.nbchan);		% Correct blinks using channel 35 = VEOG
-% 	EEG = pop_gratton(EEG, 36, 'chans', 1:EEG.nbchan);	
-    % Lookup channel locations one last time
-    %EEG = pop_chanedit(EEG, 'lookup',channelLocationFile);
-    %eeglab redraw;
-    
-    % Edit set name
-    EEG = pop_editset(EEG, 'setname', ['_BandFiltRejChanInterpMastRef_EListBinEpochBase']);
-    
-    %save file
-    EEG = pop_saveset( EEG, 'filename',['_BandFiltRejChanInterpMastRef_EListBinEpochBase.set'],...
-         'filepath',savePath);
-% 
-%     % file 8
-% 
-clear EEG;
-EEG = pop_loadset('filename',['_BandFiltRejChanInterpMastRef_EListBinEpochBase.set'],...
-'filepath',loadPath);
-% EEG.event = eventTemplate;
-%     EEG  = pop_creabasiceventlist( EEG , 'AlphanumericCleaning', 'on', 'BoundaryNumeric', { -99 }, 'BoundaryString', { 'boundary' }, 'Eventlist',...
-%         ['_EventList_BandFiltRejChanInterpMastRef.txt'] );
-%    
-%     EEG.event = eventTemplate; 
-%     EEG  = pop_binlister( EEG , 'BDF', binListerPath,...
-%         'IndexEL',  1, 'SendEL2', 'Workspace&EEG', 'UpdateEEG', 'on', 'Voutput', 'EEG' );
-% EEG.event = eventTemplate;
-   % EEG = pop_epochbin( EEG , [-200.0  1000.0],  'pre');
-    EEG  = pop_artmwppth( EEG , 'Channel',  1:EEG.nbchan, 'Flag', [ 1 2], 'Threshold',  100, 'Twindow', [ -199.2 996.1], 'Windowsize',  150, 'Windowstep',  75 );
-    EEG  = pop_artflatline( EEG , 'Channel',  1:EEG.nbchan, 'Duration',  500, 'Flag', [ 1 3], 'Threshold', [ -0.5 0.5], 'Twindow', [ -199.2 996.1] );
-    EEG  = pop_artdiff( EEG , 'Channel',  1:EEG.nbchan, 'Flag', [ 1 4], 'Threshold',  50, 'Twindow', [ -199.2 996.1] );
-	
-
-    % compuate average ERPs erplab 
-    ERP = pop_averager( EEG , 'Criterion', 'good', 'DQ_flag', 1, 'ExcludeBoundary', 'on', 'SEM', 'on' );
-      
-    % save erpset
-    ERP = pop_savemyerp(ERP,...
-        'erpname', ['_FiltInterpMastRef'],...
-        'filename', ['_FiltInterpMastRef.erp'],...
-        'filepath', savePath);
-
-    CURRENTERP = CURRENTERP + 1;
-   % ALLERP(CURRENTERP) = ERP;
-erns=ERP.bindata;
-
-%x=mean(x,3);
-EEG.data=erns;
-[~,~,z]=size(EEG.data);
-EEG.ntrials=ERP.ntrials;
-EEG.trials=z;
-
-
-end
+        

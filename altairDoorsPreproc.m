@@ -1,4 +1,4 @@
-function [EEG,ERP,erns] = altairErnPreproc(fName,raw_dataset_savepath,ongoing_dataset_savepath,erpset_savepath,binlister_loadpath,channelLocationFile)
+function [EEG,ERP,erns] = altairDoorsPreproc(fName,raw_dataset_savepath,ongoing_dataset_savepath,erpset_savepath,binlister_loadpath,channelLocationFile)
 % Extract the EEG, based on Gorka's code
 %
 %  Parameters:
@@ -195,25 +195,22 @@ CURRENTERP = 0;
 %         'BoundaryNumeric', { -99 },...          % Boundary event marker
 %         'BoundaryString', { 'boundary' },...    % Boundary string marker
 %         'Eventlist', [raw_eventlist_savepath 'Raw_EventList_' fName '.txt']);
-    EEG  = pop_creabasiceventlist(EEG,...
-        'AlphanumericCleaning', 'on',...        % Replace Letters with Numbers
-        'BoundaryNumeric', { -99 },...          % Boundary event marker
-        'BoundaryString', { 'boundary' },...    % Boundary string marker
-        'Eventlist', 'raw');
 
+    EEG  = pop_creabasiceventlist( EEG , 'AlphanumericCleaning', 'on', 'BoundaryNumeric', { -99 }, 'BoundaryString', { 'boundary' }, 'Eventlist',...
+        ['_EventList_BandFiltRejChanInterpMastRef.txt'] );
+   
 	% 16. Separate the trials into Bins by loading your BinLister file
 	% 	See: https://socialsci.libretexts.org/Bookshelves/Psychology/Book%3A_Applied_Event-Related_Potential_Data_Analysis_(Luck)/02%3A_Processing_the_Data_from_One_Participant_in_the_ERP_CORE_N400_Experiment/2.06%3A_Exercise-_Assigning_Events_to_Bins_with_BINLISTER
-	EEG = pop_binlister(EEG ,...
-		'BDF', binlister_loadpath,...
-		'IndexEL',  1,...                       % Event List Index
-		'SendEL2', 'Workspace&EEG',...          % Send the new Bins to the workplace and the EEG file
-		'UpdateEEG', 'on',...                   % Update the EEG file
-		'Voutput', 'EEG' );
+
+
+    EEG  = pop_binlister( EEG , 'BDF', binlister_loadpath,...
+        'IndexEL',  1, 'SendEL2', 'Workspace&EEG', 'UpdateEEG', 'on', 'Voutput', 'EEG' );
+
+
 
 	% 17. Epoch the Data: Window and Baseline
-	EEG = pop_epochbin(EEG,...
-		[-500.0  1000.0],...                    % Window for Epoch
-		'-500 -300');                           % Baseline window
+    
+    EEG = pop_epochbin( EEG , [-200.0  1000.0],  'pre');                       % Baseline window
     
 	% 18. Blink correction using Gratton & Coles ocular correction
     %   Regression-based method to remove blink and horizontal eye movements using the difference between VEO and HEO EOG electordes
@@ -223,9 +220,12 @@ CURRENTERP = 0;
 	EEG = pop_gratton(EEG, 36, 'chans', 1:EEG.nbchan);		% Correct horizontal eye movements using channel 36 = HEOG
     % === WARNING 2: Sometimes pop_gratton will give an error because the data length does not divide evenly into the ocular correction time windows.
     %   Use below alternative code if above gives error (will not significantly change results):
-	% EEG = pop_gratton(EEG, 35, 'chans', 1:EEG.nbchan - 1, 'blinkcritwin', '22', 'blinkcritvolt', '200');
-	% EEG = pop_gratton(EEG, 36, 'chans', 1:EEG.nbchan, 'blinkcritwin', '22', 'blinkcritvolt', '200');
-    % If still gives error, play with 'blinkcritwin' and 'blinkcritvolt' values from 17-23 and 190-210 respectively, for example: 
+%	EEG = pop_gratton(EEG, 35, 'chans', 1:EEG.nbchan - 1, 'blinkcritwin', '22', 'blinkcritvolt', '200');
+%	EEG = pop_gratton(EEG, 36, 'chans', 1:EEG.nbchan, 'blinkcritwin', '22', 'blinkcritvolt', '200');
+%	EEG = pop_gratton(EEG, 35, 'chans', 1:EEG.nbchan - 1, 'blinkcritwin', '22');
+%	EEG = pop_gratton(EEG, 36, 'chans', 1:EEG.nbchan, 'blinkcritwin', '22');
+
+% If still gives error, play with 'blinkcritwin' and 'blinkcritvolt' values from 17-23 and 190-210 respectively, for example: 
 	% EEG = pop_gratton(EEG, 35, 'chans', 1:EEG.nbchan - 1, 'blinkcritwin', '21', 'blinkcritvolt', '198');
     
     % 19. Remove VEOG/HEOG after Ocular Correction: Final Channel list: 0-34 = scalp, Reload channel locations
@@ -237,29 +237,12 @@ CURRENTERP = 0;
     
     % 20. Automatically detect & reject trials/epochs for each event code in each bin
     %   20a. Artifact Rejection: ERPLAB Moving Window: Remove epochs exceeding voltage threshold as a moving window with a total amplitude, window size, and window step
-	EEG = pop_artmwppth(EEG ,...
-		'Channel',      1:EEG.nbchan,...	% Set of channels to be tested
-		'Flag',         [ 1 2],...			% Flag rejected trials onto the Event List
-		'Threshold',    75,...              % Amplitude threshold for rejection
-		'Twindow',      [ -500 1000],...	% Test window
-		'Windowsize',   200,...             % Moving window size
-		'Windowstep',   100 );              % Moving window step
 
-    %   20b. Artifact Rejection: ERPLAB Sample-to-Sample: Remove epochs exceeding voltage threshold between two sampling points
-	EEG = pop_artdiff(EEG ,...
-		'Channel',      1:EEG.nbchan,...	% Set of channels to be tested
-		'Flag',         [ 1 3],...			% Flag rejected trials onto the Event List
-		'Threshold',    50,...              % Threshold for rejection
-		'Twindow',      [ -500 1000] ); 	% Test window
-
-    %   20c. Artifact Rejection: ERPLAB Flatline: Remove epochs with flatlined data lower than voltage threshold
-	EEG = pop_artflatline(EEG ,...
-		'Channel',      1:EEG.nbchan,...	% Set of channels to be tested
-		'Duration',     498,...             % Duration of test window
-		'Flag',         [ 1 4],...			% Flag rejected trials onto the Event List
-		'Threshold',    [ -0.5 0.5],...     % Threshold for low amplitude rejection
-		'Twindow',      [ -500 1000] );     % Test window
-
+    EEG  = pop_artmwppth( EEG , 'Channel',  1:EEG.nbchan, 'Flag', [ 1 2], 'Threshold',  150, 'Twindow', [ -200 1000], 'Windowsize',  150, 'Windowstep',  75 );
+    EEG  = pop_artflatline( EEG , 'Channel',  1:EEG.nbchan, 'Duration',  500, 'Flag', [ 1 3], 'Threshold', [ -0.5 0.5], 'Twindow', [ -200 1000] );
+    EEG  = pop_artdiff( EEG , 'Channel',  1:EEG.nbchan, 'Flag', [ 1 4], 'Threshold',  50, 'Twindow', [ -200 1000] );
+	
+    
 	% 21. Export EventList containing bin/artifact information
 %     EEG = pop_exporteegeventlist(EEG,...
 %         'Filename', ['Processed_EventList_' fName '.txt']);

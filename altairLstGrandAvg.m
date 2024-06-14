@@ -2,36 +2,16 @@
 clear; 
 clc;
 plotChan='FCz';
-load('ernArtRejection.mat','ernArtRep');
-
-%load('lstArtRejection.mat','lstArtRep');
-
 % Bin 1
-% Incorrect Response
-% .{9;10}
+% Loss Trial
+% .{6}
 % 
 % Bin 2
-% Correct Response
-% .{3;4}
+% Win Trial
+% .{7}
 % 
-% Bin 3
-% Congruent Stimulus
-% .{1}
-% 
-% Bin 4
-% Incongruent Stimulus
-% .{2}
-% % bin1
-load('ernN1.mat','e1');
-load('ernN2.mat','e2');
-load('ernN3.mat','e3');
-load('ernN4.mat','e4');
 
-load('ernFileNames.mat','filzList');
-load('ernFileNums.mat','fileNums');
-
-load('erperns.mat','erperns')
-load('erpernNames.mat','erpernNames');
+load('erplstsNames.mat','erplstNames');
 %load('OSU-00002-04B-01-ERN.bdf_kukri_ern.mat')
 %x=EEG.data;
  
@@ -41,7 +21,7 @@ load('erpernNames.mat','erpernNames');
 % ern4=squeeze(x(:,:,4));
 
 winLength=1;
-preLength=.5;
+preLength=.2;
 chanLim=48;
 % channel fcz:
 chanSel=41;
@@ -54,25 +34,16 @@ chanSel=31;
 EEG.srate=256;
 totalLength=(EEG.srate*(preLength+winLength))+1;
 subSel=1;
-ernGAvg=[];
-crnGAvg=[];
-outEx='_kukri_ern_erp.mat';
-for subSel=1:length(erpernNames)
-%ERPS=erperns(subSel);
 
-sub2Load=erpernNames{subSel};
+outEx='_kukri_lst.mat';
+for subSel=1:length(erplstNames)
+sub2Load=erplstNames{subSel};
 
 outName=append(sub2Load,outEx);
-try
 load(outName);
-ERPS=EEG;
-try
-x=ERPS{1}.bindata;
-catch
-x=ERPS.data;
-end
-
-las=ERPS.chanlocs;
+    %ERPS=erperns(subSel);
+x=EEG.data;
+las=EEG.chanlocs;
 %labs=las.labels;
 chanValues={};
 myfield=squeeze(struct2cell(las));
@@ -92,7 +63,7 @@ end
 
 
 
-fName=erpernNames{subSel};
+fName=erplstNames{subSel};
 index = strfind(fName, '\');
 
 fName=fName((index(end)+1):end);
@@ -131,21 +102,8 @@ stds=std(ern1(:,lwrBnd:searchBnd)')';
 %% figures 
 % ern
 % channel fcz is 38
-
-
-
 ern=ern1(chanSel,:);
 crn=ern2(chanSel,:);
-
-ernGAvg(iss,:)=ern;
-crnGAvg(iss,:)=crn;
-catch
-
-end
-end
-ern=mean(ernGAvg);
-crn=mean(crnGAvg);
-
 figureHandle=figure;
 xPnts=linspace(-(preLength),(winLength),length(ern));
 plot(xPnts,(crn))
@@ -153,12 +111,12 @@ ylabel('Voltage (uV)')
 xlabel('Time (ms)')
 hold on;
 plot(xPnts,(ern))
-legend('Correct','Error')
+legend('Loss','Win')
 hold off;
 
-% saveas(figureHandle,[fName 'ernChan' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
+%saveas(figureHandle,[fName 'lstChanGrat' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
 
-% 
+
 % ern=mean(ern1);
 % crn=mean(ern2);
 % figureHandle2=figure;
@@ -168,12 +126,9 @@ hold off;
 % xlabel('Time (ms)')
 % hold on;
 % plot(xPnts,(ern))
-% legend('Correct','Error')
+% legend('Loss','Win')
 % hold off;
-% %saveas(figureHandle2,[fName 'ernChanAveragedFromSub' num2str(subSel) '.jpg']);
-% 
-% close all;
-%end
+%saveas(figureHandle2,[fName 'lstChanWithICA2AveragedFromSub' num2str(subSel) '.jpg']);
 
-%figure; metaplottopo( EEG.data, 'plotfunc', 'erpimage', 'chanlocs', EEG.chanlocs);
-
+close all;
+end

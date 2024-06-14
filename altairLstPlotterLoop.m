@@ -11,6 +11,16 @@ plotChan='FCz';
 % .{7}
 % 
 
+load('lstArtRejection.mat','lstArtRep');
+mainVec=lstArtRep(:,3);
+rejThres=.8;
+vals=find(mainVec>rejThres);
+
+mainVals=mainVec(vals);
+
+losGAvg=[];
+winGAvg=[];
+
 load('erplstsNames.mat','erplstNames');
 %load('OSU-00002-04B-01-ERN.bdf_kukri_ern.mat')
 %x=EEG.data;
@@ -37,6 +47,7 @@ subSel=1;
 
 outEx='_kukri_lst.mat';
 for subSel=1:length(erplstNames)
+      if any(subSel == vals )
 sub2Load=erplstNames{subSel};
 
 outName=append(sub2Load,outEx);
@@ -104,31 +115,43 @@ stds=std(ern1(:,lwrBnd:searchBnd)')';
 % channel fcz is 38
 ern=ern1(chanSel,:);
 crn=ern2(chanSel,:);
+
+losGAvg(iss,:)=ern;
+winGAvg(iss,:)=crn;
+      end
+end
+
+ern=mean(losGAvg)*mean(maxs);
+crn=mean(winGAvg)*mean(maxs);
+
 figureHandle=figure;
 xPnts=linspace(-(preLength),(winLength),length(ern));
-plot(xPnts,(crn))
+plot(xPnts,(ern))
 ylabel('Voltage (uV)')
+ylim([-25 25])
 xlabel('Time (ms)')
 hold on;
-plot(xPnts,(ern))
+plot(xPnts,(crn))
 legend('Loss','Win')
 hold off;
+clear EEG;
+%saveas(figureHandle,[fName 'lstChanGrat' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
+load('OSU-00002-04B-01-LST.bdf_kukri_lst.mat')
+%close all;
+%x=EEG.data;
+%figure; metaplottopo( EEG.data, 'plotfunc', 'erpimage', 'chanlocs', EEG.chanlocs);
+%ern1=squeeze(x(:,:,1));
+%ern2=squeeze(x(:,:,2));
+rawData=ern-crn;
+splName='STUDY_headplot.spl';
+%xx = readlocs('testFile.ced');
+%timeArt=[8,2,7,6,5,1,4];
+%x=xx(timeArt);
 
-saveas(figureHandle,[fName 'lstChanGrat' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
-
-
-% ern=mean(ern1);
-% crn=mean(ern2);
-% figureHandle2=figure;
-% xPnts=linspace(-(preLength),(winLength),length(ern));
-% plot(xPnts,(crn))
-% ylabel('Voltage (uV)')
-% xlabel('Time (ms)')
-% hold on;
-% plot(xPnts,(ern))
-% legend('Loss','Win')
-% hold off;
-%saveas(figureHandle2,[fName 'lstChanWithICA2AveragedFromSub' num2str(subSel) '.jpg']);
-
-close all;
-end
+%x=chanLocs;
+x=EEG.chanlocs;
+headplot('setup', x, splName)
+%close;
+figure; 
+headplot(rawData', splName)
+%headplot(rawData, splName)

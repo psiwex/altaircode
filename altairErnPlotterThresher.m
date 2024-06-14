@@ -4,7 +4,14 @@ clc;
 plotChan='FCz';
 load('ernArtRejection.mat','ernArtRep');
 
+mainVec=ernArtRep(:,3);
+rejThres=.8;
+vals=find(mainVec>rejThres);
+
+mainVals=mainVec(vals);
+
 %load('lstArtRejection.mat','lstArtRep');
+
 
 % Bin 1
 % Incorrect Response
@@ -39,6 +46,8 @@ load('erpernNames.mat','erpernNames');
 % ern2=squeeze(x(:,:,2));
 % ern3=squeeze(x(:,:,3));
 % ern4=squeeze(x(:,:,4));
+ern=[];
+crn=[];
 
 winLength=1;
 preLength=.5;
@@ -47,32 +56,34 @@ chanLim=48;
 chanSel=41;
 chanSel=31;
 %chanSel=38;
-
+outEx2='_kukri_ern_erp.mat';
 %chanSel=1;
 %chanSel=21;
 
 EEG.srate=256;
 totalLength=(EEG.srate*(preLength+winLength))+1;
-subSel=1;
-ernGAvg=[];
-crnGAvg=[];
-outEx='_kukri_ern_erp.mat';
+subSelTrue=1;
+
+
+% if any(subSel == vals )
+%     disp('There is at least one value here.')
+% else
+%     disp('All values are not here.')
+% end
+
 for subSel=1:length(erpernNames)
-%ERPS=erperns(subSel);
 
-sub2Load=erpernNames{subSel};
+    if any(subSel == vals )
+fName=erpernNames{(subSel)};
 
-outName=append(sub2Load,outEx);
+strLoad=append(fName,outEx2);
 try
-load(outName);
-ERPS=EEG;
-try
-x=ERPS{1}.bindata;
-catch
-x=ERPS.data;
-end
-
-las=ERPS.chanlocs;
+load(strLoad)
+x=EEG.data;
+las=EEG.chanlocs;
+    %ERPS=erperns(subSel);
+%x=ERPS{1}.bindata;
+%las=ERPS{1}.chanlocs;
 %labs=las.labels;
 chanValues={};
 myfield=squeeze(struct2cell(las));
@@ -92,7 +103,7 @@ end
 
 
 
-fName=erpernNames{subSel};
+
 index = strfind(fName, '\');
 
 fName=fName((index(end)+1):end);
@@ -131,20 +142,18 @@ stds=std(ern1(:,lwrBnd:searchBnd)')';
 %% figures 
 % ern
 % channel fcz is 38
+subSelTrue=subSelTrue+1;
+ern(subSelTrue,:)=ern1(chanSel,:);
+crn(subSelTrue,:)=ern2(chanSel,:);
 
-
-
-ern=ern1(chanSel,:);
-crn=ern2(chanSel,:);
-
-ernGAvg(iss,:)=ern;
-crnGAvg(iss,:)=crn;
 catch
-
 end
+    end
 end
-ern=mean(ernGAvg);
-crn=mean(crnGAvg);
+ee1=ern;
+ee2=crn;
+ern=mean(ern);
+crn=mean(crn);
 
 figureHandle=figure;
 xPnts=linspace(-(preLength),(winLength),length(ern));
@@ -156,9 +165,9 @@ plot(xPnts,(ern))
 legend('Correct','Error')
 hold off;
 
-% saveas(figureHandle,[fName 'ernChan' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
+%saveas(figureHandle,[fName 'ernChan' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
 
-% 
+
 % ern=mean(ern1);
 % crn=mean(ern2);
 % figureHandle2=figure;
@@ -170,10 +179,19 @@ hold off;
 % plot(xPnts,(ern))
 % legend('Correct','Error')
 % hold off;
-% %saveas(figureHandle2,[fName 'ernChanAveragedFromSub' num2str(subSel) '.jpg']);
-% 
-% close all;
-%end
+%saveas(figureHandle2,[fName 'ernChanAveragedFromSub' num2str(subSel) '.jpg']);
 
-%figure; metaplottopo( EEG.data, 'plotfunc', 'erpimage', 'chanlocs', EEG.chanlocs);
+%close all;
+rawData=ern-crn;
+splName='STUDY_headplot.spl';
+%xx = readlocs('testFile.ced');
+%timeArt=[8,2,7,6,5,1,4];
+%x=xx(timeArt);
 
+%x=chanLocs;
+x=EEG.chanlocs;
+headplot('setup', x, splName)
+%close;
+figure; 
+headplot(rawData', splName)
+%headplot(rawData, splName)

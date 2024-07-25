@@ -11,24 +11,17 @@ plotChan='FCz';
 % .{7}
 % 
 
-load('erpnpuNames.mat','erpnpuNames');
+load('erplstsNames.mat','erplstNames');
 %load('OSU-00002-04B-01-ERN.bdf_kukri_ern.mat')
 %x=EEG.data;
-erplstNames=erpnpuNames;
+ 
 % ern1=squeeze(x(:,:,1));
 % ern2=squeeze(x(:,:,2));
 % ern3=squeeze(x(:,:,3));
 % ern4=squeeze(x(:,:,4));
-% 41 = No-threat countdown
-% 42 = No-threat ISI
-% 141 = Predictable threat countdown (danger)
-% 142 = Predictable threat ISI (safe)
-% 241 = Unpredictable countdown (danger)
-% 242 = Unpredictable ISI (danger)
 
-
-winLength=.4;
-preLength=.1;
+winLength=1;
+preLength=.2;
 chanLim=48;
 % channel fcz:
 chanSel=41;
@@ -42,7 +35,7 @@ EEG.srate=256;
 totalLength=(EEG.srate*(preLength+winLength))+1;
 subSel=1;
 
-outEx='_kukri_npu.mat';
+outEx='_kukri_lst.mat';
 for subSel=1:length(erplstNames)
 sub2Load=erplstNames{subSel};
 
@@ -79,9 +72,6 @@ ern1=squeeze(x(:,:,1));
 ern2=squeeze(x(:,:,2));
 ern3=squeeze(x(:,:,3));
 ern4=squeeze(x(:,:,4));
-ern5=squeeze(x(:,:,5));
-ern6=squeeze(x(:,:,6));
-
 %     ern1=e1{subSel};
 % ern2=e2{subSel};
 % ern3=e3{subSel};
@@ -103,7 +93,8 @@ corRtErn=0;
 incRtErn=0;
 
 lwrBnd=round(preLength*EEG.srate);
-searchBnd=min([round(1.1*EEG.srate); round(winLength*EEG.srate)]); 
+searchBnd=round(1.1*EEG.srate);
+
 means=mean(ern1(:,lwrBnd:searchBnd),2);
 maxs=max(abs(ern1(:,lwrBnd:searchBnd))')';
 stds=std(ern1(:,lwrBnd:searchBnd)')';
@@ -112,8 +103,7 @@ stds=std(ern1(:,lwrBnd:searchBnd)')';
 % ern
 % channel fcz is 38
 ern=ern1(chanSel,:);
-crn=ern3(chanSel,:);
-urn=ern5(chanSel,:);
+crn=ern2(chanSel,:);
 figureHandle=figure;
 xPnts=linspace(-(preLength),(winLength),length(ern));
 plot(xPnts,(crn))
@@ -121,29 +111,10 @@ ylabel('Voltage (uV)')
 xlabel('Time (ms)')
 hold on;
 plot(xPnts,(ern))
-plot(xPnts,(urn))
-legend('No-threat','Predictable','Unpredictable')
+legend('Loss','Win')
 hold off;
 
-%saveas(figureHandle,[fName 'npuChanGrat' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
-
-saveas(figureHandle,[fName 'npuIsiChanGrat' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
-
-ern=ern2(chanSel,:);
-crn=ern4(chanSel,:);
-urn=ern6(chanSel,:);
-figureHandle=figure;
-xPnts=linspace(-(preLength),(winLength),length(ern));
-plot(xPnts,(crn))
-ylabel('Voltage (uV)')
-xlabel('Time (ms)')
-hold on;
-plot(xPnts,(ern))
-plot(xPnts,(urn))
-legend('No-threat','Predictable','Unpredictable')
-hold off;
-
-saveas(figureHandle,[fName 'npuCountChanGrat' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
+%saveas(figureHandle,[fName 'lstChanGrat' num2str(chanSel) 'FromSub' num2str(subSel) '.jpg']);
 
 
 % ern=mean(ern1);

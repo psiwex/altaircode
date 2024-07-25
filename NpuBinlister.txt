@@ -1,0 +1,23 @@
+Bin 1
+No-threat countdown
+.{41}
+
+Bin 2
+No-threat ISI
+.{42}
+
+Bin 3
+Predictable threat countdown (danger)
+.{141}
+
+Bin 4
+Predictable threat ISI (safe)
+.{142}
+
+Bin 5
+Unpredictable countdown (danger)
+.{241}
+
+Bin 6
+Unpredictable ISI (danger)
+.{242}

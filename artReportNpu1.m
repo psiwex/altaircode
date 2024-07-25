@@ -11,7 +11,7 @@
 
 clear all; close all; clc;
 
-file_name = 'summaryNpuArtifactRejections0.txt';
+file_name = 'summaryArtifactRejectionsLstWithNoICA.txt';
 %dataset_loadpath = 'C:\Users\glaze\Desktop\GorkaScripts\data\datasets\Processing\';
 dataset_loadpath = 'C:\Users\John\Documents\MATLAB\soarData\';
 %channelLocationFile = 'C:\Users\glaze\Documents\MatLabPrograms\eeglab2020_0\plugins\dipfit\standard_BESA\standard-10-5-cap385.elp';
@@ -26,7 +26,7 @@ dirName = 'C:\Users\John\Documents\MATLAB\soarData\';
 
 %metaData=struct2table(sub);
 %fileList=metaData.name;
-load('erpnpuNames.mat','erpnpuNames');
+load('erplstNames.mat','erplstNames');
 %load('erpernNames.mat','erpernNames');
 %load('erpernsFiles.mat','erpernsFiles');
 %fileList=erpernsFiles;
@@ -34,12 +34,12 @@ load('erpnpuNames.mat','erpnpuNames');
 
 %ii=fileList(1);
 subst='_erpset.erp';
-outEx='_kukri_npu.mat';
+outEx='_kukri_lst.mat';
 %load EEGlab
 %[ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
 
-for iSubject = 1:length(erpnpuNames)
-fName=erpnpuNames{iSubject};
+for iSubject = 1:length(erplstNames)
+fName=erplstNames{iSubject};
 fOut=strcat(fName,outEx);
 load(fOut);
 ERP=EEG;
@@ -68,12 +68,11 @@ fName=fName((index(end)+1):end);
         header = 'subject, ';
         fprintf(fid, header);
         % populate accepted bin labels
-        binz=min([ERP.nbin; length(ERP.bindescr)]);
-        for bin = 1:binz
+        for bin = 1:ERP.nbin
             fprintf(fid, [char(ERP.bindescr(bin)) ' accepted, ']);
         end
         % populate rejected bin labels
-        for bin = 1:binz
+        for bin = 1:ERP.nbin
             fprintf(fid, [char(ERP.bindescr(bin)) ' rejected, ']);
         end
         fclose(fid);
@@ -84,12 +83,11 @@ fName=fName((index(end)+1):end);
     % save subject
     fprintf(fid, ['\n' fName ', ']);
     % save accepted trial count per bin
-    binz=min([ERP.nbin; length(ERP.bindescr)]);
-    for bin = 1:binz
+    for bin = 1:ERP.nbin
          fprintf(fid, [char(string(ERP.ntrials.accepted(bin))) ', ']);
     end
     % save rejected trial count per bin
-    for bin = 1:binz
+    for bin = 1:ERP.nbin
          fprintf(fid, [char(string(ERP.ntrials.rejected(bin))) ', ']);
     end
     

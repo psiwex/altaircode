@@ -2,9 +2,8 @@ clear;
 clc;
 tic;
 
-bnds=[.1,40];
 subst='.bdf';
-outEx='.mat';
+
 dirName = 'C:\Users\John\Documents\MATLAB\soarData\';
 
 numErn=1;
@@ -43,27 +42,47 @@ eName=strcat(fName,'-ERN.bdf');
 
 outEx2='ProcessedEpochs.mat';
 
+%% ern
+try
 [EEGe,ERPe,erne] = altairErnPreproc(eName,raw_dataset_savepath,ongoing_dataset_savepath,erpset_savepath,binlisterPathErn,channelLocationFile);
-[EEGl,ERPl,ernl] = altairDoorsPreproc(lName,raw_dataset_savepath,ongoing_dataset_savepath,erpset_savepath,binListerPathLst,channelLocationFile);
-[EEGn,ERPn,ernn] = altairNpuPreproc(nName,raw_dataset_savepath,ongoing_dataset_savepath,erpset_savepath,binListerPathNpu,channelLocationFile);
-
 [epochsAcceptedPercente] = altairAcceptedEpochs(EEGe);
 EEGe.epochsAcceptedPercent=epochsAcceptedPercente;
+eOut=strcat(eName,outEx2);
+save(eOut,'EEGe')
+namesErn{numErn}=eOut;
+numErn=numErn+1;
 
+catch
+end
+
+%% lst
+try
+[EEGl,ERPl,ernl] = altairDoorsPreproc(lName,raw_dataset_savepath,ongoing_dataset_savepath,erpset_savepath,binListerPathLst,channelLocationFile);
 [epochsAcceptedPercentl] = altairAcceptedEpochs(EEGl);
 EEGl.epochsAcceptedPercent=epochsAcceptedPercentl;
+lOut=strcat(lName,outEx2);
+save(lOut,'EEGl')
+namesLst{numLst}=lOut;
+numLst=numLst+1;
+catch
+end
 
+%% npu
+try
+[EEGn,ERPn,ernn] = altairNpuPreproc(nName,raw_dataset_savepath,ongoing_dataset_savepath,erpset_savepath,binListerPathNpu,channelLocationFile);
 [epochsAcceptedPercentn] = altairAcceptedEpochs(EEGn);
 EEGn.epochsAcceptedPercent=epochsAcceptedPercentn;
-
-eOut=strcat(eName,outEx2);
-lOut=strcat(lName,outEx2);
 nOut=strcat(nName,outEx2);
-
-save(eOut,'EEGe')
-save(lOut,'EEGl')
 save(nOut,'EEGn')
-
-namesErn{numErn}=eOut;
-namesLst{numLst}=lOut;
 namesNpu{numNpu}=nOut;
+numNpu=numNpu+1;
+catch
+end
+
+
+
+
+
+
+
+

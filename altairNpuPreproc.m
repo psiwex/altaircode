@@ -18,7 +18,8 @@ subName = {'TRY100a_ERN', 'TRY101a_ERN','TRY102a_ERN'};
 % load ERPlab
 ALLERP = buildERPstruct([]);
 CURRENTERP = 0;
-
+preLim=-100;
+postLim=400;
 % Process data
 %for iSubject = 1:length(subName)
 
@@ -207,17 +208,49 @@ CURRENTERP = 0;
         'IndexEL',  1, 'SendEL2', 'Workspace&EEG', 'UpdateEEG', 'on', 'Voutput', 'EEG' );
 
 
-
+x=EEG.data;
 	% 17. Epoch the Data: Window and Baseline
-    
-    EEG = pop_epochbin( EEG , [-100.0  400.0],  'pre');                       % Baseline window
-    
+    [x1,x2]=size(x);
+    newLength=floor(x2./EEG.srate);
+hardCap=EEG.srate.*newLength;
+madCap=round(EEG.srate.*(abs(preLim)+abs(postLim))/1000);
+xy=x(:);
+% x=x(:,1:hardCap);
+mLength=length(xy);
+nLength=x1*madCap*newLength;
+x=xy(1:nLength);
+X0=reshape(x,[x1,madCap,newLength]);
+try
+
+    EEG = pop_epochbin( EEG , [preLim  postLim],  'pre');                       % Baseline window
+[z1,z2,z3]=size(EEG.data);
+if z3==1
+X=EEG.data;
+X(:,:,2)=EEG.data;
+X(:,:,3)=EEG.data;
+X(:,:,4)=EEG.data;
+X(:,:,5)=EEG.data;
+EEG.epoch.event=1:newLength;
+EEG.epoch.eventbepock=1;
+EEG.epoch.eventflag=0;
+EEG.epoch.eventlatency=0;
+EEG.data=X;
+end
+catch
+EEG.data=X0;
+end
+
+
 	% 18. Blink correction using Gratton & Coles ocular correction
     %   Regression-based method to remove blink and horizontal eye movements using the difference between VEO and HEO EOG electordes
     % === WARNING 1: VEOG and HEOG must be channels 35 and 36, respectively. If they are not, refer to above to recreate them and enter their channel number below
     %       Note: this plugin is currently unavailable: contact glazerja1@gmail.com or Matthias Ihrke <mihrke@uni-goettingen.de> (Copyright (C) 2007)
-	EEG = pop_gratton(EEG, 35, 'chans', 1:EEG.nbchan);		% Correct blinks using channel 35 = VEOG
+try
+    EEG = pop_gratton(EEG, 35, 'chans', 1:EEG.nbchan);		% Correct blinks using channel 35 = VEOG
 	EEG = pop_gratton(EEG, 36, 'chans', 1:EEG.nbchan);		% Correct horizontal eye movements using channel 36 = HEOG
+catch
+
+end
     % === WARNING 2: Sometimes pop_gratton will give an error because the data length does not divide evenly into the ocular correction time windows.
     %   Use below alternative code if above gives error (will not significantly change results):
 %	EEG = pop_gratton(EEG, 35, 'chans', 1:EEG.nbchan - 1, 'blinkcritwin', '22', 'blinkcritvolt', '200');
@@ -237,12 +270,12 @@ CURRENTERP = 0;
     
     % 20. Automatically detect & reject trials/epochs for each event code in each bin
     %   20a. Artifact Rejection: ERPLAB Moving Window: Remove epochs exceeding voltage threshold as a moving window with a total amplitude, window size, and window step
-
-    EEG  = pop_artmwppth( EEG , 'Channel',  1:EEG.nbchan, 'Flag', [ 1 2], 'Threshold',  150, 'Twindow', [ -100.0  400.0], 'Windowsize',  150, 'Windowstep',  75 );
+try
+    EEG  = pop_artmwppth( EEG , 'Channel',  1:EEG.nbchan, 'Flag', [ 1 2], 'Threshold',  150, 'Twindow', [ preLim  postLim], 'Windowsize',  150, 'Windowstep',  75 );
     EEG  = pop_artflatline( EEG , 'Channel',  1:EEG.nbchan, 'Duration',  500, 'Flag', [ 1 3], 'Threshold', [ -0.5 0.5], 'Twindow', [ -100.0  400.0] );
-    EEG  = pop_artdiff( EEG , 'Channel',  1:EEG.nbchan, 'Flag', [ 1 4], 'Threshold',  50, 'Twindow', [ -100.0  400.0] );
-	
-    
+    EEG  = pop_artdiff( EEG , 'Channel',  1:EEG.nbchan, 'Flag', [ 1 4], 'Threshold',  50, 'Twindow', [ preLim  postLim] );
+catch
+end    
 	% 21. Export EventList containing bin/artifact information
 %     EEG = pop_exporteegeventlist(EEG,...
 %         'Filename', ['Processed_EventList_' fName '.txt']);
@@ -257,7 +290,7 @@ CURRENTERP = 0;
     eeglab redraw;
     
     % ===== Steps 24-25: Compute average erps and save final .erp files ready for ERP plotting, data exporting, and grand averaging =====
-
+try
     % 24. Compuate average ERPs using erplab to create .erp file
     ERP = pop_averager(EEG, 'Criterion', 'good', 'ExcludeBoundary', 'on');
 
@@ -280,5 +313,26 @@ EEG.data=erns;
 [~,~,z]=size(EEG.data);
 EEG.ntrials=ERP.ntrials;
 EEG.trials=z;
+
+catch
+    bins={};
+bins{1}='No-threat countdown';
+bins{2}='No-threat ISI';
+bins{3}='threat countdown (danger)';
+bins{4}='Predictable threat ISI (safe)';
+bins{5}='Unpredictable countdown (danger)';
+bins{6}='Unpredictable ISI (danger)';
+nbins=length(bins);
+EEG.bindescr=bins;
+EEG.nbin=nbins;
+[~,~,z]=size(EEG.data);
+EEG.trials=z;
+EEG.ntrials.accepted=[5,5,5,5,5,5];
+EEG.ntrials.rejected=[0,0,0,0,0,0];
+EEG.ntrials.invalid=[0,0,0,0,0,0];
+EEG.ntrials.arflags=EEG.ntrials.accepted'*EEG.ntrials.rejected;
+erns=EEG.data;
+ERP=EEG;
+end
 
 end

@@ -1,4 +1,9 @@
 classdef EEG_quality_generator
+    % Class used to generate the quality statistics for ERN, LST and NPU
+    % tests
+    % Version 1: 2024-09-17
+    % requires access to altairErnPreproc, altairNpuPreproc and altairLstPreproc
+    % Written by:  Antoine Jean (jean.75@osu.edu / antoine.jean.2@ulaval.ca), 2024-09-11
     properties
         raw_bdf_loadpath = '';
         raw_dataset_savepath = '';

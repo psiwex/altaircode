@@ -1,3 +1,6 @@
+% Example using EEG_quality_generator
+% Written by:  Antoine Jean (jean.75@osu.edu / antoine.jean.2@ulaval.ca), 2024-09-11
+
 clear;
 clc;
 

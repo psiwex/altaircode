@@ -15,7 +15,7 @@ y1=EEG.ntrials.accepted;
 y2=EEG.ntrials.rejected;
 %epochRejected=[epochRejected; y2];
 
-epochsTotal = y1+y2;
-epochsAcceptedPercent = y1/epochsTotal;
-epochsAcceptedPercent=mean(epochsAcceptedPercent);
+epochsTotal = sum(y1+y2);
+epochsAcceptedPercent = sum(y1)/epochsTotal;
+%epochsAcceptedPercent=mean(epochsAcceptedPercent);
 end

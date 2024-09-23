@@ -36,11 +36,9 @@ namesLst={};
 namesNpu={};
 
 fName='OSU-00001-04B-01';
-
-fName='UC0004';
-nName=strcat(fName,'_NPU.bdf');
-lName=strcat(fName,'_LST.bdf');
-eName=strcat(fName,'_ERN.bdf');
+nName=strcat(fName,'-NPU.bdf');
+lName=strcat(fName,'-LST.bdf');
+eName=strcat(fName,'-ERN.bdf');
 
 outEx2='ProcessedEpochs.mat';
 
